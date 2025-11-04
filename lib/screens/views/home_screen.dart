@@ -6,6 +6,7 @@ import 'package:icon_forest/mbi_linecons.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:weather/weather.dart';
 import 'package:icon_forest/gala_icons.dart';
@@ -48,7 +49,7 @@ class _RequestList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromARGB(255, 244, 238, 238),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -89,6 +90,11 @@ class _RequestList extends StatelessWidget {
                 ],
               ),
             ),
+            Text(
+              "Relief Centers",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ReliefCentersMap(),
           ],
         ),
       ),
