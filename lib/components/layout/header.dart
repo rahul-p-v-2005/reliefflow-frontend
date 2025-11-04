@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/auth/signup_screen.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -23,10 +25,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   //  width: 1,
                   //   height: 1,
                   image: AssetImage(
-                    'assets/images/logo.jpg',
+                    'assets/images/logo3.png',
                   ),
                 ),
-
                 Text(
                   'Relief',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -56,12 +57,42 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                     // ...
                   },
                 ),
-                IconButton(
+                PopupMenuButton<String>(
+                  // We use your original icon and size
                   iconSize: 32,
                   icon: const Icon(Icons.account_circle),
-                  onPressed: () {
-                    // ...
+
+                  // This function is called when a user selects an item from the menu
+                  onSelected: (String value) {
+                    if (value == 'login') {
+                      // Navigate to the Login Screen
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    } else if (value == 'signup') {
+                      // Navigate to the Sign Up Screen
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SignupScreen(),
+                        ),
+                      );
+                    }
                   },
+
+                  // This builds the menu with your Login and Sign Up options
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'login',
+                          child: Text('Login'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'signup',
+                          child: Text('Sign Up'),
+                        ),
+                      ],
                 ),
               ],
             ),

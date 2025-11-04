@@ -62,6 +62,7 @@ class SignupScreen extends StatelessWidget {
                       SizedBox(height: 8),
                       TextField(
                         decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.email_outlined),
                           // filled: true,
                           hintText: "Email",
                         ),
@@ -100,7 +101,13 @@ class SignupScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => const SignupScreen(),
+                              ),
+                            );
+                          },
                           child: Text('SIGN UP'),
                         ),
                       ),

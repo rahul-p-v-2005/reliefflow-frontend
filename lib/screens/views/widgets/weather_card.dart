@@ -13,11 +13,11 @@ class WeatherCard extends StatefulWidget {
 }
 
 class _WeatherCardState extends State<WeatherCard> {
-  double lat = 55.0111;
+  double lat = 11.9059639;
 
-  double lon = 15.0569;
+  double lon = 75.3353795;
 
-  String cityName = 'Kongens Lyngby';
+  String cityName = 'Azhikode';
 
   WeatherFactory wf = WeatherFactory(openWeatherApiKey);
 
@@ -47,11 +47,12 @@ class _WeatherCardState extends State<WeatherCard> {
             final wind = weather?.windSpeed;
             final humidity = weather?.humidity;
             final cloud = weather?.cloudiness;
+            final city = weather?.areaName;
             // double temp=w.temperature.celcius;
             // double celsius = snapshot.temperature.celsius;
             return Container(
               width: double.infinity,
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.black),
                 borderRadius: BorderRadius.circular(12),
@@ -59,7 +60,7 @@ class _WeatherCardState extends State<WeatherCard> {
               ),
               child: Column(
                 children: [
-                  Text('location'),
+                  Text('$city'),
                   Text(
                     '$Temp°',
                     style: TextStyle(
