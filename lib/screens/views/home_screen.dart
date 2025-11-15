@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:icon_forest/icon_forest.dart';
-import 'package:icon_forest/iconoir.dart';
-import 'package:icon_forest/mbi_combi.dart';
-import 'package:icon_forest/mbi_linecons.dart';
+// import 'package:icon_forest/icon_forest.dart';
+// import 'package:icon_forest/iconoir.dart';
+// import 'package:icon_forest/mbi_combi.dart';
+// import 'package:icon_forest/mbi_linecons.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:weather/weather.dart';
@@ -68,7 +70,7 @@ class _RequestList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'My Requests Status',
+              'My Requests',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             ElevatedButton(
@@ -118,7 +120,15 @@ class _RequestButtonsRow extends StatelessWidget {
             // width: 160,
             height: 140,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return RequestAidScreen();
+                    },
+                  ),
+                );
+              },
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(
@@ -142,7 +152,7 @@ class _RequestButtonsRow extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                   ),
                 ],
@@ -158,7 +168,13 @@ class _RequestButtonsRow extends StatelessWidget {
             // width: 160,
             height: 140,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const RequestDonation(),
+                  ),
+                );
+              },
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(
@@ -186,7 +202,7 @@ class _RequestButtonsRow extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                   ),
                 ],
