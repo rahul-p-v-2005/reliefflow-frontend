@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:icon_forest/iconoir.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/home_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:weather/weather.dart';
 
 class WeatherCard extends StatefulWidget {

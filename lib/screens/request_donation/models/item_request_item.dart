@@ -1,5 +1,9 @@
+// import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item_category.dart';
+
+import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item_category.dart';
+
 class ItemRequestItem {
-  final String category;
+  final ItemCategory category;
   final String description;
   final String quantity;
 

@@ -31,7 +31,7 @@ class _RequestAidState extends State<RequestAidScreen> {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[200],
+                      backgroundColor: Color.fromARGB(255, 30, 136, 229),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadiusGeometry.circular(8),
                       ),
@@ -79,7 +79,7 @@ class _RequestAidState extends State<RequestAidScreen> {
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[200],
+                    backgroundColor: Color.fromARGB(255, 30, 136, 229),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadiusGeometry.circular(8),
                     ),

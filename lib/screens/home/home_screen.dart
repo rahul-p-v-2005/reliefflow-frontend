@@ -9,6 +9,7 @@ import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:weather/weather.dart';
 import 'package:icon_forest/gala_icons.dart';
@@ -27,10 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: Header(),
       body: Container(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(
-            spacing: 12,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: ListView(
             children: [
+              ReliefCentersMap(),
               WeatherCard(),
               _RequestButtonsRow(),
               _RequestList(),
@@ -81,7 +82,13 @@ class _RequestList extends StatelessWidget {
                   borderRadius: BorderRadiusGeometry.circular(8),
                 ),
               ),
-              onPressed: () => {},
+              onPressed: () => {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => RequestStatus(),
+                  ),
+                ),
+              },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -92,11 +99,6 @@ class _RequestList extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              "Relief Centers",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            ReliefCentersMap(),
           ],
         ),
       ),

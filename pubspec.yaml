@@ -42,6 +42,11 @@ dependencies:
   latlong2: ^0.9.1
   url_launcher: ^6.3.2
   bottom_sheet: ^4.0.4
+  google_fonts: ^6.3.2
+  persistent_bottom_nav_bar: ^6.2.1
+  iconoir_flutter: ^6.4.0
+  http: ^1.6.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

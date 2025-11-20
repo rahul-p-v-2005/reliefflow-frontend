@@ -32,7 +32,7 @@ class _RequestDonationState extends State<RequestDonation> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(32.0),
-        child: Column(
+        child: ListView(
           children: [
             ToggleButtons(
               direction: Axis.horizontal,
@@ -44,13 +44,13 @@ class _RequestDonationState extends State<RequestDonation> {
                 });
               },
               borderRadius: const BorderRadius.all(Radius.circular(8)),
-              selectedBorderColor: Colors.blue[700],
+              selectedBorderColor: Color.fromARGB(255, 2, 75, 139),
               selectedColor: Colors.white,
-              fillColor: Colors.blue[200],
-              color: Colors.blue[400],
+              fillColor: Color.fromARGB(255, 30, 136, 229),
+              color: Color.fromARGB(255, 30, 136, 229),
               constraints: const BoxConstraints(
                 minHeight: 40.0,
-                minWidth: 160.0,
+                minWidth: 145,
               ),
               isSelected: DonationRequestType.values.map(
                 (e) {
@@ -85,6 +85,7 @@ class _ItemsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: Column(
+        spacing: 18,
         children: [
           SizedBox(
             height: 48,
@@ -106,17 +107,31 @@ class _ItemsBody extends StatelessWidget {
             },
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Colors.black.withAlpha(200),
-                  width: 1,
+                  color: Colors.grey.withAlpha(100),
+                  width: 0.9,
                 ),
               ),
+              padding: EdgeInsets.all(12),
               child: Row(
                 children: [
                   Text(
+                    "Select item type...",
+                    style: TextStyle(
+                      // fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: Colors.grey.withAlpha(220),
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
                     "+",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: Colors.grey.withAlpha(220),
+                    ),
                   ),
                 ],
               ),
@@ -126,7 +141,34 @@ class _ItemsBody extends StatelessWidget {
             listenable: addedItems,
             builder: (context, child) {
               print(addedItems.items);
-              return Text('Number of items = ${addedItems.items.length}');
+              // return Text('Number of items = ${addedItems.items.length}');
+              return ListView.separated(
+                shrinkWrap: true,
+                itemBuilder: (context, index) {
+                  final item = addedItems.items[index];
+                  return ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(12),
+                      side: BorderSide(color: Colors.grey),
+                    ),
+                    leading: Icon(
+                      item.category.icon,
+                      color: Color.fromARGB(255, 30, 136, 229),
+                    ),
+                    title: Text(item.category.categoryName),
+                    subtitle: Text(item.description),
+                    trailing: Text(
+                      item.quantity,
+                    ),
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return SizedBox(
+                    height: 8,
+                  );
+                },
+                itemCount: addedItems.items.length,
+              );
             },
           ),
           SizedBox(
@@ -137,14 +179,14 @@ class _ItemsBody extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[200],
+                backgroundColor: Color.fromARGB(255, 30, 136, 229),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadiusGeometry.circular(8),
                 ),
               ),
               child: Text(
-                "Submit Request",
+                "SUBMIT REQUEST",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -168,7 +210,7 @@ class _CashBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 56,
+            height: 24,
           ),
           Text("Amount", style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(
@@ -190,7 +232,9 @@ class _CashBody extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue),
+                  borderSide: BorderSide(
+                    color: Color.fromARGB(255, 30, 136, 229),
+                  ),
                 ),
                 hintText: "₹ 0.00",
                 hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
@@ -225,7 +269,9 @@ class _CashBody extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue),
+                  borderSide: BorderSide(
+                    color: Color.fromARGB(255, 30, 136, 229),
+                  ),
                 ),
               ),
             ),
@@ -246,7 +292,10 @@ class _CashBody extends StatelessWidget {
               // width: 320,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.withAlpha(100), width: 1),
+                border: Border.all(
+                  color: Colors.grey.withAlpha(100),
+                  width: 1,
+                ),
               ),
               padding: EdgeInsets.all(10),
               child: Row(
@@ -271,15 +320,17 @@ class _CashBody extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[200],
-                foregroundColor: Colors.white,
+                backgroundColor: Color.fromARGB(255, 30, 136, 229),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadiusGeometry.circular(8),
                 ),
               ),
               child: Text(
-                "Submit Request",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                "SUBMIT REQUEST",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

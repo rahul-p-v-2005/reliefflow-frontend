@@ -1,9 +1,23 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:glassmorphism/glassmorphism.dart';
+import 'package:http/http.dart';
+import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/signup_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  String email = '';
+  String password = '';
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +73,11 @@ class LoginScreen extends StatelessWidget {
                           // filled: true,
                           hintText: "Email",
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            email = value;
+                          });
+                        },
                       ),
                       SizedBox(height: 8),
                       TextField(
@@ -68,13 +87,20 @@ class LoginScreen extends StatelessWidget {
                           // filled: true,
                           hintText: "Password",
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            password = value;
+                          });
+                        },
                       ),
 
                       SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            _onLoginPressed(email, password);
+                          },
                           child: Text('LOGIN'),
                         ),
                       ),
@@ -104,6 +130,53 @@ class LoginScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _onLoginPressed(String email, String password) async {
+    const loginRoute = '$kBaseUrl/public/login';
+
+    var body = jsonEncode({
+      "email": email,
+      "password": password,
+    });
+
+    try {
+      final response = await post(
+        Uri.parse(loginRoute),
+        headers: {"Accept": "/", "Content-Type": "application/json"},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final parsedBody = jsonDecode(response.body) as Map<String, dynamic>;
+
+        print(parsedBody);
+
+        final token = parsedBody['token']; // from backend
+
+        // Save token locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(kTokenStorageKey, token);
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
+          (r) => false,
+        );
+      } else {
+        print('error');
+        final error = jsonDecode(response.body);
+        _showError(error['message'] ?? "Login failed");
+      }
+    } catch (e) {
+      _showError("Something went wrong: $e");
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

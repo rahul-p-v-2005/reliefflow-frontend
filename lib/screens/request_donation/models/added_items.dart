@@ -6,7 +6,7 @@ class AddedItems extends ValueNotifier {
 
   final List<ItemRequestItem> _addedItems = [];
 
-  List get items => _addedItems;
+  List<ItemRequestItem> get items => _addedItems;
 
   void add(ItemRequestItem item) {
     _addedItems.add(item);
