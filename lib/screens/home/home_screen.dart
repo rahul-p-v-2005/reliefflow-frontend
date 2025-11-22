@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: Header(),
       body: Container(
         child: Padding(
@@ -32,8 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             children: [
               ReliefCentersMap(),
+              SizedBox(
+                height: 8,
+              ),
               WeatherCard(),
-              _RequestButtonsRow(),
+              // _RequestButtonsRow(),
               _RequestList(),
             ],
           ),

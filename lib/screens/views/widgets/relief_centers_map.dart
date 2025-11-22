@@ -8,25 +8,48 @@ class ReliefCentersMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadiusGeometry.circular(12),
-      child: SizedBox(
-        height: 100,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: LatLng(
-              51.509364,
-              -0.128928,
-            ), // Center the map over London
-            initialZoom: 9.2,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        // // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.grey,
+        //     blurRadius: 3,
+        //     // blurStyle: BlurStyle.normal,
+        //   ),
+        // ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 3,
+        children: [
+          Text(
+            "  Relief Centers Near You",
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          children: [
-            TileLayer(
-              urlTemplate:
-                  'https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
+          ClipRRect(
+            borderRadius: BorderRadiusGeometry.circular(8),
+            child: SizedBox(
+              height: 100,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(
+                    51.509364,
+                    -0.128928,
+                  ), // Center the map over London
+                  initialZoom: 9.2,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

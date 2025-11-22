@@ -157,8 +157,25 @@ class _ItemsBody extends StatelessWidget {
                     ),
                     title: Text(item.category.categoryName),
                     subtitle: Text(item.description),
-                    trailing: Text(
-                      item.quantity,
+                    trailing: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        height: 32,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          color: Color.fromARGB(255, 30, 136, 229),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            item.quantity,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },

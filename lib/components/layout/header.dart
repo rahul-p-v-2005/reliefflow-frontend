@@ -24,13 +24,12 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   // fit: BoxFit.cover,
                   //  width: 1,
                   //   height: 1,
-                  image: AssetImage(
-                    'assets/images/logo3.png',
-                  ),
+                  image: AssetImage('assets/images/logo3.png'),
+                  height: 22,
                 ),
                 Text(
                   'Relief',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
                 ),
                 Text(
                   'Flow',
@@ -42,7 +41,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                       245,
                     ).withOpacity(1.0),
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: 22,
                   ),
                 ),
               ],
@@ -52,47 +51,13 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 IconButton(
                   iconSize: 32,
-                  icon: const Icon(Icons.notifications_active),
+                  icon: const Icon(
+                    Icons.notifications,
+                    size: 26,
+                  ),
                   onPressed: () {
                     // ...
                   },
-                ),
-                PopupMenuButton<String>(
-                  // We use your original icon and size
-                  iconSize: 32,
-                  icon: const Icon(Icons.account_circle),
-
-                  // This function is called when a user selects an item from the menu
-                  onSelected: (String value) {
-                    if (value == 'login') {
-                      // Navigate to the Login Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
-                    } else if (value == 'signup') {
-                      // Navigate to the Sign Up Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SignupScreen(),
-                        ),
-                      );
-                    }
-                  },
-
-                  // This builds the menu with your Login and Sign Up options
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'login',
-                          child: Text('Login'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'signup',
-                          child: Text('Sign Up'),
-                        ),
-                      ],
                 ),
               ],
             ),

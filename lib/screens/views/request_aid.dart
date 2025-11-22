@@ -68,7 +68,21 @@ class _RequestAidState extends State<RequestAidScreen> {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: "Describe your request",
-                  border: OutlineInputBorder(),
+                  hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: Color.fromARGB(255, 30, 136, 229),
+                    ),
+                  ),
                 ),
               ),
               SizedBox(
