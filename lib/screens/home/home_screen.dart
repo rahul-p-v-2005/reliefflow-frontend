@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
+import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
@@ -25,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 243, 241, 241),
       appBar: Header(),
       body: Container(
         child: Padding(
@@ -37,18 +38,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 8,
               ),
               WeatherCard(),
+              SizedBox(
+                height: 8,
+              ),
+
+              _AidRequestList(),
+              SizedBox(
+                height: 8,
+              ),
               // _RequestButtonsRow(),
-              _RequestList(),
+              _DonationRequestList(),
             ],
           ),
         ),
       ),
+      bottomNavigationBar: MainNavigation(),
     );
   }
 }
 
-class _RequestList extends StatelessWidget {
-  const _RequestList({
+class _AidRequestList extends StatelessWidget {
+  const _AidRequestList({
     super.key,
   });
 
@@ -56,16 +66,8 @@ class _RequestList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 244, 238, 238),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(50),
-            blurRadius: 9,
-            spreadRadius: 1,
-            offset: Offset(3, 3),
-          ),
-        ],
       ),
 
       child: Padding(
@@ -75,33 +77,208 @@ class _RequestList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'My Requests',
+              'My Aid Requests',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            ElevatedButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,
-                padding: EdgeInsets.all(12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadiusGeometry.circular(8),
+            Divider(
+              color: const Color.fromARGB(255, 243, 241, 241),
+              thickness: 2.5,
+            ),
+            ListTile(
+              title: Text("Flood Relief Aid"),
+              subtitle: Text(
+                "Request ID:",
+                style: TextStyle(color: Colors.grey),
+              ),
+              trailing: SizedBox(
+                width: 74,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        // spacing: 4,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: Colors.white,
+                            size: 15,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+
+                            child: Text(
+                              "Approved",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "2024-11-20",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
-              onPressed: () => {
+              onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => RequestStatus(),
-                  ),
-                ),
+                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                );
               },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    children: [Text("Recents"), Text("Recents")],
-                  ),
-                  Icon(Icons.arrow_forward_ios),
-                ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DonationRequestList extends StatelessWidget {
+  const _DonationRequestList({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          spacing: 9,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'My Donation Requests',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Divider(
+              color: const Color.fromARGB(255, 243, 241, 241),
+              thickness: 2.5,
+            ),
+            ListTile(
+              leading: Icon(Icons.shopping_bag_outlined),
+              title: Text("Flood Relief Aid"),
+              subtitle: Text(
+                "Request ID:",
+                style: TextStyle(color: Colors.grey),
               ),
+              trailing: SizedBox(
+                width: 74,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        // spacing: 4,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: Colors.white,
+                            size: 15,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+
+                            child: Text(
+                              "Approved",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "2024-11-20",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                );
+              },
+            ),
+            Divider(
+              color: const Color.fromARGB(255, 243, 241, 241),
+              thickness: 2.5,
+            ),
+            ListTile(
+              leading: Icon(Icons.currency_rupee_rounded),
+              title: Text("Flood Relief Aid"),
+              subtitle: Text(
+                "Request ID:",
+                style: TextStyle(color: Colors.grey),
+              ),
+              trailing: SizedBox(
+                width: 74,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        // spacing: 4,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: Colors.white,
+                            size: 15,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+
+                            child: Text(
+                              "Approved",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "2024-11-20",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                );
+              },
             ),
           ],
         ),

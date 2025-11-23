@@ -34,6 +34,9 @@ class ReliefCentersMap extends StatelessWidget {
               height: 100,
               child: FlutterMap(
                 options: MapOptions(
+                  interactionOptions: InteractionOptions(
+                    flags: InteractiveFlag.none,
+                  ),
                   initialCenter: LatLng(
                     51.509364,
                     -0.128928,
@@ -43,7 +46,7 @@ class ReliefCentersMap extends StatelessWidget {
                 children: [
                   TileLayer(
                     urlTemplate:
-                        'https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
+                        'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
                   ),
                 ],
               ),
