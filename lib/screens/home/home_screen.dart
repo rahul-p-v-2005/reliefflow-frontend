@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
@@ -52,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: MainNavigation(),
+      // bottomNavigationBar: MainNavigation(),
     );
   }
 }
@@ -131,8 +132,20 @@ class _AidRequestList extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                showModalBottomSheet(
+                  context: (context),
+                  builder: (context) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(25),
+                        ),
+                      ),
+                      padding: EdgeInsets.all(24),
+                      child: AidRequestDetails(),
+                    );
+                  },
                 );
               },
             ),

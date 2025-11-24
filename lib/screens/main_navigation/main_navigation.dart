@@ -23,8 +23,8 @@ class _MainNavigationState extends State<MainNavigation> {
   List<Widget> _screens() {
     return [
       const HomeScreen(),
-      const SizedBox(), // placeholder for middle button
-      const SizedBox(),
+      Container(), // placeholder for middle button
+      Container(),
       const RequestDonation(),
       const RequestAidScreen(),
     ];
@@ -41,7 +41,12 @@ class _MainNavigationState extends State<MainNavigation> {
 
       /// Fake item just for spacing
       PersistentBottomNavBarItem(
-        icon: const Icon(Icons.circle, color: Colors.transparent),
+        icon: const Icon(
+          Icons.request_page,
+        ),
+        title: 'Aids',
+        activeColorPrimary: Colors.blue,
+        inactiveColorPrimary: Colors.grey,
       ),
 
       /// Center + Button (will trigger star menu)
@@ -56,7 +61,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.volunteer_activism),
-        title: "Donation",
+        title: "Donations",
         activeColorPrimary: Colors.blue,
         inactiveColorPrimary: Colors.grey,
       ),
@@ -72,32 +77,18 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          PersistentTabView(
-            context,
-            controller: _controller,
-            screens: _screens(),
-            items: _navItems(),
-            navBarStyle: NavBarStyle.style15,
-            backgroundColor: Colors.white,
-            decoration: NavBarDecoration(
-              borderRadius: BorderRadius.circular(0),
-              colorBehindNavBar: Colors.white,
-            ),
-            hideNavigationBarWhenKeyboardAppears: true,
-          ),
-
-          /// ⭐ Floating Star Menu
-          _StarMenu(
-            onAidClick: () {
-              _controller.jumpToTab(4);
-            },
-            onDonationClick: () {
-              _controller.jumpToTab(3);
-            },
-          ),
-        ],
+      body: PersistentTabView(
+        context,
+        controller: _controller,
+        screens: _screens(),
+        items: _navItems(),
+        navBarStyle: NavBarStyle.style15,
+        backgroundColor: Colors.white,
+        decoration: NavBarDecoration(
+          borderRadius: BorderRadius.circular(0),
+          colorBehindNavBar: Colors.white,
+        ),
+        hideNavigationBarWhenKeyboardAppears: true,
       ),
     );
   }

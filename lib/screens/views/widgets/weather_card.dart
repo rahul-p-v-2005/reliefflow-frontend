@@ -86,7 +86,7 @@ class _WeatherCardState extends State<WeatherCard> {
             // if we got our data
           } else if (snapshot.hasData) {
             return Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
@@ -114,14 +114,12 @@ class _WeatherCardState extends State<WeatherCard> {
                     lon: snapshot.data!.longitude,
                   ),
 
-                  const SizedBox(height: 24),
-
-                  Container(
-                    height: 1,
-                    color: Colors.white.withOpacity(0.2),
-                  ),
-
-                  const SizedBox(height: 16),
+                  // const SizedBox(height: 24),
+                  // Container(
+                  //   height: 1,
+                  //   color: Colors.white.withOpacity(0.2),
+                  // ),
+                  const SizedBox(height: 8),
 
                   // Forecast Row
                   _FiveDayForecastWidget(
@@ -214,19 +212,19 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Current Location",
-                      style: TextStyle(
-                        color: Color(0xFFBFDBFE),
-                        fontSize: 12,
-                      ),
-                    ),
-                    SizedBox(height: 4),
+                    // Text(
+                    //   "Current Location",
+                    //   style: TextStyle(
+                    //     color: Color(0xFFBFDBFE),
+                    //     fontSize: 12,
+                    //   ),
+                    // ),
+                    // SizedBox(height: 4),
                     Text(
                       weatherLocation ?? 'N/A',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -244,7 +242,7 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            // const SizedBox(height: 1),
 
             // Temperature + Condition
             Row(
@@ -256,20 +254,20 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
                     Text(
                       '${(temp ?? 0).toString()}°',
                       style: TextStyle(
-                        fontSize: 64,
+                        fontSize: 48,
                         height: 1,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      "C",
-                      style: TextStyle(
-                        fontSize: 24,
-                        color: Color(0xFFBFDBFE),
-                      ),
-                    ),
+                    // SizedBox(width: 8),
+                    // Text(
+                    //   "C",
+                    //   style: TextStyle(
+                    //     fontSize: 24,
+                    //     color: Color(0xFFBFDBFE),
+                    //   ),
+                    // ),
                   ],
                 ),
                 Column(
@@ -282,7 +280,7 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    // SizedBox(height: 4),
                     Text(
                       "Feels like ${(feelsLike?.celsius ?? 0).toStringAsFixed(2)}°F",
                       style: TextStyle(
@@ -295,45 +293,65 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            // const SizedBox(height: 24),
 
             // Divider
-            Container(
-              height: 1,
-              color: Colors.white.withOpacity(0.2),
-            ),
+            // Container(
+            //   height: 1,
+            //   color: Colors.white.withOpacity(0.2),
+            // ),
 
-            const SizedBox(height: 16),
+            // const SizedBox(height: 16),
 
             // Weather Details
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _WeatherDetail(
-                  icon: Icons.water_drop,
-                  label: "Humidity",
-                  value: '${(humidity ?? 0).toString()} %',
-                ),
-                _WeatherDetail(
-                  icon: Icons.air,
-                  label: "Wind",
-                  value: '${(wind ?? 0).toString()} mph',
-                ),
-                _WeatherDetail(
-                  icon: Icons.cloud,
-                  label: "Cloudiness",
-                  value: '${cloud ?? 0.toString()} okta',
-                ),
-                _WeatherDetail(
-                  icon: Icons.speed,
-                  label: "Pressure",
-                  value: '${(pressure ?? 0).toString()} mb',
-                ),
-              ],
-            ),
+            // _CurrentAtmosphere(humidity: humidity, wind: wind, cloud: cloud, pressure: pressure),
           ],
         );
       },
+    );
+  }
+}
+
+class _CurrentAtmosphere extends StatelessWidget {
+  const _CurrentAtmosphere({
+    super.key,
+    required this.humidity,
+    required this.wind,
+    required this.cloud,
+    required this.pressure,
+  });
+
+  final double? humidity;
+  final double? wind;
+  final double? cloud;
+  final double? pressure;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _WeatherDetail(
+          icon: Icons.water_drop,
+          label: "Humidity",
+          value: '${(humidity ?? 0).toString()} %',
+        ),
+        _WeatherDetail(
+          icon: Icons.air,
+          label: "Wind",
+          value: '${(wind ?? 0).toString()} mph',
+        ),
+        _WeatherDetail(
+          icon: Icons.cloud,
+          label: "Cloudiness",
+          value: '${cloud ?? 0.toString()} okta',
+        ),
+        _WeatherDetail(
+          icon: Icons.speed,
+          label: "Pressure",
+          value: '${(pressure ?? 0).toString()} mb',
+        ),
+      ],
     );
   }
 }
@@ -459,7 +477,7 @@ class _ForecastItem extends StatelessWidget {
             color: Color(0xFFBFDBFE),
           ),
         ),
-        SizedBox(height: 2),
+        // SizedBox(height: 2),
 
         // Time
         Text(
@@ -470,12 +488,12 @@ class _ForecastItem extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 4),
+        // const SizedBox(height: 4),
         Image.network(
           _getWeatherIconUrl(weather?.weatherIcon ?? ''),
           width: 44,
         ),
-        const SizedBox(height: 4),
+        // const SizedBox(height: 4),
         Text(
           temp,
           style: const TextStyle(

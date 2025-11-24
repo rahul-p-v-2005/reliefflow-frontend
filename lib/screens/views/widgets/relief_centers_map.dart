@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/widgets/large_relief_centers_map.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ReliefCentersMap extends StatelessWidget {
@@ -8,29 +9,12 @@ class ReliefCentersMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        // // boxShadow: [
-        //   BoxShadow(
-        //     color: Colors.grey,
-        //     blurRadius: 3,
-        //     // blurStyle: BlurStyle.normal,
-        //   ),
-        // ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 3,
-        children: [
-          Text(
-            "  Relief Centers Near You",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          ClipRRect(
-            borderRadius: BorderRadiusGeometry.circular(8),
-            child: SizedBox(
+    return InkWell(
+      child: ClipRRect(
+        borderRadius: BorderRadiusGeometry.circular(24),
+        child: Stack(
+          children: [
+            SizedBox(
               height: 100,
               child: FlutterMap(
                 options: MapOptions(
@@ -51,9 +35,26 @@ class ReliefCentersMap extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
+            Center(
+              heightFactor: 4.8,
+              child: Text(
+                "Relief centers near you",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      onTap: () {
+        Navigator.of(
+          context,
+        ).push(
+          MaterialPageRoute(builder: (context) => LargeReliefCentersMap()),
+        );
+      },
     );
   }
 }

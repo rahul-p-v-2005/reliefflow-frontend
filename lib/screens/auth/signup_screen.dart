@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -237,7 +238,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => const MainNavigation()),
           (r) => false,
         );
       } else {
