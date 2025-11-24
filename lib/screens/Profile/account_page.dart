@@ -140,8 +140,10 @@ class _AccountState extends State<Account> {
                     onPressed: () async {
                       final prefs = await SharedPreferences.getInstance();
                       prefs.clear();
-                      Navigator.pushAndRemoveUntil(
+                      Navigator.of(
                         context,
+                        rootNavigator: true,
+                      ).pushAndRemoveUntil(
                         MaterialPageRoute<void>(
                           builder: (context) => const LoginScreen(),
                         ),
