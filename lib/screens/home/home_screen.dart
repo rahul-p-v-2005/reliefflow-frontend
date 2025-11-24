@@ -13,6 +13,7 @@ import 'package:reliefflow_frontend_public_app/screens/request_donation/request_
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
+import 'package:star_menu/star_menu.dart';
 import 'package:weather/weather.dart';
 import 'package:icon_forest/gala_icons.dart';
 
@@ -24,6 +25,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  final StarMenuController controller = StarMenuController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +66,47 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      // bottomNavigationBar: MainNavigation(),
+      floatingActionButton:
+          FloatingActionButton(
+            onPressed: () {
+              print('FloatingActionButton tapped');
+            },
+            child: Icon(Icons.looks_one),
+          ).addStarMenu(
+            items: [
+              ActionChip(
+                label: Text('Request Aid'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return RequestAidScreen();
+                      },
+                    ),
+                  );
+                },
+              ),
+              ActionChip(
+                label: Text('Request Donation'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const RequestDonation(),
+                    ),
+                  );
+                },
+              ),
+            ],
+            params: StarMenuParameters.arc(
+              ArcType.quarterTopLeft,
+              radiusY: 50,
+              radiusX: 100,
+            ),
+            controller: controller,
+            onItemTapped: (index, controller) {
+              controller.closeMenu?.call();
+            },
+          ),
     );
   }
 }
