@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
@@ -26,7 +27,7 @@ class _MainNavigationState extends State<MainNavigation> {
       Container(), // placeholder for middle button
       Container(),
       const RequestDonation(),
-      const RequestAidScreen(),
+      const Account(),
     ];
   }
 

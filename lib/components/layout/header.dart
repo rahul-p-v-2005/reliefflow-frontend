@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/signup_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/notificatio_page.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -25,7 +26,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   //  width: 1,
                   //   height: 1,
                   image: AssetImage('assets/images/logo3.png'),
-                  height: 22,
+                  height: 24,
                 ),
                 Text(
                   'Relief',
@@ -56,7 +57,11 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                     size: 26,
                   ),
                   onPressed: () {
-                    // ...
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const NotificationPage(),
+                      ),
+                    );
                   },
                 ),
               ],
