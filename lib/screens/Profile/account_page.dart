@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/change_password_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/edit_profile.dart';
@@ -16,6 +18,53 @@ class Account extends StatefulWidget {
 
 class _AccountState extends State<Account> {
   File? _selectedImage;
+  bool val = true;
+  String userName = 'Loading...';
+  String userRole = '';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  // Fetch user profile from API
+  Future<void> _fetchUserProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(
+        'kTokenStorageKey',
+      ); // Get your stored auth token
+
+      final response = await http.get(
+        Uri.parse('kBaseUrl/public'), // Replace with your API URL
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          userName = data['data']['name'] ?? 'User';
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          userName = 'Error loading name';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        userName = 'Error loading name';
+        isLoading = false;
+      });
+      print('Error fetching user profile: $e');
+    }
+  }
 
   // 1. Function to pick image from gallery
   Future<void> _pickImage() async {
@@ -32,7 +81,7 @@ class _AccountState extends State<Account> {
     }
   }
 
-  bool val = true;
+  bool val1 = true;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +108,7 @@ class _AccountState extends State<Account> {
                         },
                         child: _selectedImage != null
                             ? ClipRRect(
-                                borderRadius: BorderRadiusGeometry.circular(
+                                borderRadius: BorderRadius.circular(
                                   100,
                                 ),
                                 child: Image.file(
@@ -74,7 +123,7 @@ class _AccountState extends State<Account> {
                                 size: 120,
                               ),
                       ),
-                      Text('Alan Sherhan KP', style: TextStyle(fontSize: 30)),
+                      Text(userName, style: TextStyle(fontSize: 30)),
                       Text(
                         'Public User',
                         style: TextStyle(fontSize: 15, color: Colors.grey),
@@ -127,10 +176,10 @@ class _AccountState extends State<Account> {
                     children: [
                       SwitchListTile(
                         activeColor: Colors.blue,
-                        value: val,
+                        value: val1,
                         onChanged: (bool? value) {
                           setState(() {
-                            val = value!;
+                            val1 = value!;
                           });
                         },
                         title: Text('Notification'),
@@ -149,20 +198,26 @@ class _AccountState extends State<Account> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadiusGeometry.circular(15),
+                        borderRadius: BorderRadius.circular(15),
                       ),
                       elevation: 2,
                     ),
                     onPressed: () async {
                       final prefs = await SharedPreferences.getInstance();
-                      prefs.clear();
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                        (r) => false,
-                      );
+                      await prefs.clear();
+
+                      // Use Navigator to completely replace the navigation stack
+                      if (context.mounted) {
+                        Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushAndRemoveUntil(
+                          MaterialPageRoute<void>(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
                     },
                     child: Text(
                       'Log Out',
