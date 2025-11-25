@@ -83,13 +83,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           SizedBox(height: 8),
-                          TextField(
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.key),
-                              // filled: true,
-                              hintText: "Password",
-                            ),
+                          PasswordField(
+                            hintText: "Password",
                             onChanged: (value) {
                               setState(() {
                                 password = value;
@@ -182,6 +177,43 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+}
+
+class PasswordField extends StatefulWidget {
+  const PasswordField({super.key, this.onChanged, this.hintText});
+
+  final void Function(String)? onChanged;
+
+  final String? hintText;
+
+  @override
+  State<PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<PasswordField> {
+  bool isObscure = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      obscureText: isObscure,
+
+      decoration: InputDecoration(
+        prefixIcon: Icon(Icons.key),
+        suffixIcon: IconButton(
+          onPressed: () {
+            setState(() {
+              isObscure = !isObscure;
+            });
+          },
+          icon: Icon(isObscure ? Icons.visibility_off : Icons.remove_red_eye),
+        ),
+        // filled: true,
+        hintText: widget.hintText,
+      ),
+      onChanged: widget.onChanged,
     );
   }
 }

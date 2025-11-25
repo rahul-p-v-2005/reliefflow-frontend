@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:reliefflow_frontend_public_app/screens/Profile/change_password_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/edit_profile.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,6 +39,7 @@ class _AccountState extends State<Account> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
+        backgroundColor: Colors.blue[50],
       ),
       body: Container(
         child: Padding(
@@ -74,7 +76,7 @@ class _AccountState extends State<Account> {
                       ),
                       Text('Alan Sherhan KP', style: TextStyle(fontSize: 30)),
                       Text(
-                        'Registered Volunteer',
+                        'Public User',
                         style: TextStyle(fontSize: 15, color: Colors.grey),
                       ),
                     ],
@@ -102,7 +104,13 @@ class _AccountState extends State<Account> {
                       ListTile(
                         leading: Icon(Icons.lock),
                         title: Text('Change Password'),
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const ChangePasswordPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -132,10 +140,18 @@ class _AccountState extends State<Account> {
                   ),
                 ),
                 SizedBox(
+                  height: 30,
+                ),
+                SizedBox(
                   width: double.infinity,
+                  height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadiusGeometry.circular(15),
+                      ),
+                      elevation: 2,
                     ),
                     onPressed: () async {
                       final prefs = await SharedPreferences.getInstance();

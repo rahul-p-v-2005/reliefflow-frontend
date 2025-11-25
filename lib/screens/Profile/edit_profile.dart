@@ -13,20 +13,10 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   // Using the primary color from your screenshot (Teal/Cyan)
-  final Color primaryColor = const Color.fromARGB(255, 139, 231, 216);
-  final Color secondaryColor = const Color(0xFFE0F2F1);
-
-  // Form Controllers (Pre-filled with data from your image)
-  final TextEditingController _nameController = TextEditingController(text: "");
-  final TextEditingController _roleController = TextEditingController(
-    text: " ",
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: "",
-  );
-  final TextEditingController _phoneController = TextEditingController(
-    text: "",
-  );
+  String name = '';
+  String email = '';
+  String address = '';
+  String phoneNumber = '';
 
   File? _selectedImage;
 
@@ -74,7 +64,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Text(
               "Save",
               style: TextStyle(
-                color: primaryColor,
+                color: Colors.blue,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -137,36 +127,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // --- Form Fields ---
-            _buildTextField(
-              "Full Name",
-              "Enter your full name",
-              _nameController,
-              Icons.person_outline,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 16),
+                Text(
+                  'Full Name',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                EditField(
+                  hintText: "Enter Your Full Name",
+                  onChanged: (value) {
+                    setState(() {
+                      name = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'E-mail',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                EditField(
+                  hintText: "Enter Your E-mail",
+                  onChanged: (value) {
+                    setState(() {
+                      email = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Address',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                EditField(
+                  hintText: "Enter Your Address",
+                  onChanged: (value) {
+                    setState(() {
+                      address = value;
+                    });
+                  },
+                ),
+                SizedBox(
+                  height: 16,
+                ),
+                Text(
+                  'Phone Number',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                EditField(
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  hintText: "+91 ",
+                  onChanged: (value) {
+                    setState(() {
+                      phoneNumber = value;
+                    });
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              "Skill",
-              "Enter your role",
-              _roleController,
-              Icons.work_outline,
-            ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              "Email Address",
-              "Enter email",
-              _emailController,
-              Icons.email_outlined,
-            ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              "Phone Number",
-              "Enter phone number",
-              _phoneController,
-              Icons.phone_outlined,
-            ),
-
             const SizedBox(height: 40),
 
             // --- Main Action Button ---
@@ -186,11 +206,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 child: InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const Account(),
-                      ),
-                    );
+                    // Navigator.of(context).push(
+                    //   MaterialPageRoute<void>(
+                    //     builder: (context) => const Account(),
+                    //   ),
+                    // );
                   },
                   child: const Text(
                     "Save Changes",
@@ -210,43 +230,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // Helper widget to keep code clean
-  Widget _buildTextField(
-    String label,
-    String hint,
-    TextEditingController controller,
-    IconData icon,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
+}
+
+class EditField extends StatefulWidget {
+  const EditField({
+    super.key,
+    this.onChanged,
+    this.hintText,
+    this.keyboardType,
+  });
+
+  final void Function(String)? onChanged;
+
+  final String? hintText;
+
+  final TextInputType? keyboardType;
+
+  @override
+  State<EditField> createState() => _EditFieldState();
+}
+
+class _EditFieldState extends State<EditField> {
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      keyboardType: widget.keyboardType,
+      // obscureText: isObscure,
+      decoration: InputDecoration(
+        // filled: true
+        hintText: widget.hintText,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.blue),
+          gapPadding: BorderSide.strokeAlignCenter,
+          borderRadius: BorderRadius.circular(16),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon, color: Colors.grey[500]),
-            contentPadding: const EdgeInsets.symmetric(vertical: 15),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: primaryColor, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-          ),
-        ),
-      ],
+      ),
+      onChanged: widget.onChanged,
     );
   }
 }
