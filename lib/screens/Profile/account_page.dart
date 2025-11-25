@@ -139,7 +139,9 @@ class _AccountState extends State<Account> {
                     ],
                   ),
                 ),
-
+                SizedBox(
+                  height: 24,
+                ),
                 SizedBox(
                   width: double.infinity,
                   height: 55,
