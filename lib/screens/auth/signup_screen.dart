@@ -24,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String confirmPassword = '';
   String phoneNo = '';
   String address = '';
+  String role = 'public';
 
   @override
   Widget build(BuildContext context) {
@@ -153,15 +154,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                       content: Text('Passwords do not match'),
                                     ),
                                   );
+                                } else {
+                                  _onSignUpPressed(
+                                    name,
+                                    email,
+                                    password,
+                                    // confirmPassword,
+                                    phoneNo,
+                                    address,
+                                  );
                                 }
-                                _onSignUpPressed(
-                                  name,
-                                  email,
-                                  password,
-                                  confirmPassword,
-                                  phoneNo,
-                                  address,
-                                );
                               },
                               child: Text('SIGN UP'),
                             ),
@@ -201,8 +203,8 @@ class _SignupScreenState extends State<SignupScreen> {
     String name,
     String email,
     String password,
-    String confirmPassword,
-    String phoneNo,
+    // String confirmPassword,
+    String phoneNumber,
     String address,
   ) async {
     const loginRoute = '$kBaseUrl/public/signup';
@@ -210,8 +212,9 @@ class _SignupScreenState extends State<SignupScreen> {
     var body = jsonEncode({
       "name": name,
       "email": email,
+      "role": role,
       "password": password,
-      "phoneNumber": phoneNo,
+      "phoneNumber": phoneNumber,
       "address": address,
     });
 

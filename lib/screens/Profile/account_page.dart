@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/change_password_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/edit_profile.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
@@ -20,7 +21,6 @@ class _AccountState extends State<Account> {
   File? _selectedImage;
   bool val = true;
   String userName = 'Loading...';
-  String userRole = '';
   bool isLoading = true;
 
   @override
@@ -31,19 +31,33 @@ class _AccountState extends State<Account> {
 
   // Fetch user profile from API
   Future<void> _fetchUserProfile() async {
+    const profile = '$kBaseUrl/public/profile';
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(
-        'kTokenStorageKey',
-      ); // Get your stored auth token
+        kTokenStorageKey,
+      ); // ✅ Remove quotes - use the constant directly
+
+      print('Token found: ${token != null}'); // Debug
+
+      if (token == null || token.isEmpty) {
+        setState(() {
+          userName = 'Not logged in';
+          isLoading = false;
+        });
+        return;
+      }
 
       final response = await http.get(
-        Uri.parse('kBaseUrl/public'), // Replace with your API URL
+        Uri.parse(profile),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
