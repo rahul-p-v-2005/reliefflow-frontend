@@ -204,20 +204,16 @@ class _AccountState extends State<Account> {
                     ),
                     onPressed: () async {
                       final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear();
-
-                      // Use Navigator to completely replace the navigation stack
-                      if (context.mounted) {
-                        Navigator.of(
-                          context,
-                          rootNavigator: true,
-                        ).pushAndRemoveUntil(
-                          MaterialPageRoute<void>(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                          (route) => false,
-                        );
-                      }
+                      prefs.clear();
+                      Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      ).pushAndRemoveUntil(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (r) => false,
+                      );
                     },
                     child: Text(
                       'Log Out',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
+import 'package:star_menu/star_menu.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
@@ -21,17 +22,7 @@ class _MainNavigationState extends State<MainNavigation> {
     _controller = PersistentTabController(initialIndex: 0);
   }
 
-  List<Widget> _screens() {
-    return [
-      const HomeScreen(),
-      Container(), // placeholder for middle button
-      Container(),
-      const RequestDonation(),
-      const Account(),
-    ];
-  }
-
-  List<PersistentBottomNavBarItem> _navItems() {
+  List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.home),
@@ -39,27 +30,12 @@ class _MainNavigationState extends State<MainNavigation> {
         activeColorPrimary: Colors.blue,
         inactiveColorPrimary: Colors.grey,
       ),
-
-      /// Fake item just for spacing
       PersistentBottomNavBarItem(
-        icon: const Icon(
-          Icons.request_page,
-        ),
+        icon: const Icon(Icons.request_page),
         title: 'Aids',
         activeColorPrimary: Colors.blue,
         inactiveColorPrimary: Colors.grey,
       ),
-
-      /// Center + Button (will trigger star menu)
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.add, size: 35),
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-        onPressed: (context) {
-          // We won't use this anymore, because we use the floating StarMenu.
-        },
-      ),
-
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.volunteer_activism),
         title: "Donations",
@@ -77,120 +53,122 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PersistentTabView(
-        context,
-        controller: _controller,
-        screens: _screens(),
-        items: _navItems(),
-        navBarStyle: NavBarStyle.style15,
-        backgroundColor: Colors.white,
-        decoration: NavBarDecoration(
-          borderRadius: BorderRadius.circular(0),
-          colorBehindNavBar: Colors.white,
-        ),
-        hideNavigationBarWhenKeyboardAppears: true,
+    return PersistentTabView.custom(
+      context,
+      controller: _controller,
+      itemCount: _navBarsItems().length,
+      screens: [
+        CustomNavBarScreen(screen: const HomeScreen()),
+        CustomNavBarScreen(screen: const RequestAidScreen()),
+        CustomNavBarScreen(screen: const RequestDonation()),
+        CustomNavBarScreen(screen: const Account()), // Profile screen
+      ],
+      confineToSafeArea: true,
+      handleAndroidBackButtonPress: true,
+      stateManagement: true,
+      hideNavigationBarWhenKeyboardAppears: true,
+      customWidget: CustomNavBar(
+        items: _navBarsItems(),
+        selectedIndex: _controller.index,
+        onItemSelected: (index) {
+          setState(() {
+            _controller.index = index;
+          });
+        },
       ),
+      backgroundColor: Colors.white,
     );
   }
 }
 
-/// =====================================================
-/// ⭐ Floating Star Menu
-/// =====================================================
-class _StarMenu extends StatefulWidget {
-  final VoidCallback onAidClick;
-  final VoidCallback onDonationClick;
+/// Custom Navigation Bar without StarMenu embedded
+class CustomNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final List<PersistentBottomNavBarItem> items;
+  final ValueChanged<int> onItemSelected;
 
-  const _StarMenu({
-    required this.onAidClick,
-    required this.onDonationClick,
+  const CustomNavBar({
+    super.key,
+    required this.selectedIndex,
+    required this.items,
+    required this.onItemSelected,
   });
 
-  @override
-  State<_StarMenu> createState() => _StarMenuState();
-}
-
-class _StarMenuState extends State<_StarMenu>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  bool isOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
+  Widget _buildNavItem(
+    PersistentBottomNavBarItem item,
+    bool isSelected,
+    int index,
+  ) {
+    // Regular nav items
+    return Container(
+      alignment: Alignment.center,
+      height: 60.0,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: IconTheme(
+              data: IconThemeData(
+                size: 26.0,
+                color: isSelected
+                    ? item.activeColorPrimary
+                    : item.inactiveColorPrimary ?? item.activeColorPrimary,
+              ),
+              child: item.icon,
+            ),
+          ),
+          if (item.title != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 5.0),
+              child: Material(
+                type: MaterialType.transparency,
+                child: FittedBox(
+                  child: Text(
+                    item.title!,
+                    style: TextStyle(
+                      color: isSelected
+                          ? item.activeColorPrimary
+                          : item.inactiveColorPrimary,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
-
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void toggleMenu() {
-    if (isOpen) {
-      _controller.reverse();
-    } else {
-      _controller.forward();
-    }
-    setState(() => isOpen = !isOpen);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: SizedBox(
-        height: 200,
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Positioned(
-              bottom: 70,
-              child: ScaleTransition(
-                scale: _animation,
-                child: FloatingActionButton.extended(
-                  heroTag: "aid",
-                  onPressed: () {
-                    toggleMenu();
-                    widget.onAidClick();
-                  },
-                  backgroundColor: Colors.blue,
-                  label: const Text("Request Aid"),
-                  icon: const Icon(Icons.add_a_photo),
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 60.0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: items.asMap().entries.map((entry) {
+              int index = entry.key;
+              PersistentBottomNavBarItem item = entry.value;
+              return Flexible(
+                child: GestureDetector(
+                  onTap: () => onItemSelected(index),
+                  child: _buildNavItem(
+                    item,
+                    selectedIndex == index,
+                    index,
+                  ),
                 ),
-              ),
-            ),
-
-            Positioned(
-              bottom: 140,
-              child: ScaleTransition(
-                scale: _animation,
-                child: FloatingActionButton.extended(
-                  heroTag: "donation",
-                  onPressed: () {
-                    toggleMenu();
-                    widget.onDonationClick();
-                  },
-                  backgroundColor: Colors.green,
-                  label: const Text("Request Donation"),
-                  icon: const Icon(Icons.volunteer_activism),
-                ),
-              ),
-            ),
-          ],
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
