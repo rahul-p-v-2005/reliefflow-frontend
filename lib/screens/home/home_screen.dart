@@ -68,14 +68,22 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton:
           FloatingActionButton(
+            backgroundColor: Color.fromARGB(255, 30, 136, 229),
             onPressed: () {
               print('FloatingActionButton tapped');
             },
-            child: Icon(Icons.looks_one),
+            child: Icon(
+              Icons.health_and_safety_sharp,
+              color: Colors.white,
+            ),
           ).addStarMenu(
             items: [
               ActionChip(
-                label: Text('Request Aid'),
+                label: Text(
+                  'Request Aid',
+                  style: TextStyle(color: Colors.white),
+                ),
+                backgroundColor: Colors.blue,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -87,7 +95,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               ActionChip(
-                label: Text('Request Donation'),
+                backgroundColor: Colors.blue,
+                label: Text(
+                  'Request Donation',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -238,7 +250,7 @@ class _DonationRequestList extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(Icons.shopping_bag_outlined),
-              title: Text("Flood Relief Aid"),
+              title: Text("Food Supply"),
               subtitle: Text(
                 "Request ID:",
                 style: TextStyle(color: Colors.grey),
@@ -284,8 +296,20 @@ class _DonationRequestList extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                showModalBottomSheet(
+                  context: (context),
+                  builder: (context) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(25),
+                        ),
+                      ),
+                      padding: EdgeInsets.all(24),
+                      child: AidRequestDetails(),
+                    );
+                  },
                 );
               },
             ),
@@ -295,7 +319,7 @@ class _DonationRequestList extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(Icons.currency_rupee_rounded),
-              title: Text("Flood Relief Aid"),
+              title: Text("Cash for Rehabilation"),
               subtitle: Text(
                 "Request ID:",
                 style: TextStyle(color: Colors.grey),
@@ -341,8 +365,20 @@ class _DonationRequestList extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => RequestStatus()),
+                showModalBottomSheet(
+                  context: (context),
+                  builder: (context) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(25),
+                        ),
+                      ),
+                      padding: EdgeInsets.all(24),
+                      child: AidRequestDetails(),
+                    );
+                  },
                 );
               },
             ),

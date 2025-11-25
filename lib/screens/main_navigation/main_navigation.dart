@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/aid_request_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/donation_request_screen.dart';
 import 'package:star_menu/star_menu.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
@@ -59,8 +61,8 @@ class _MainNavigationState extends State<MainNavigation> {
       itemCount: _navBarsItems().length,
       screens: [
         CustomNavBarScreen(screen: const HomeScreen()),
-        CustomNavBarScreen(screen: const RequestAidScreen()),
-        CustomNavBarScreen(screen: const RequestDonation()),
+        CustomNavBarScreen(screen: const AidsScreen()),
+        CustomNavBarScreen(screen: const DonationsScreen()),
         CustomNavBarScreen(screen: const Account()), // Profile screen
       ],
       confineToSafeArea: true,

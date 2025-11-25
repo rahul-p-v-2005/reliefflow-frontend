@@ -98,6 +98,9 @@ class _ItemsBody extends StatelessWidget {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(25),
+                      ),
                     ),
                     padding: EdgeInsets.all(16),
                     child: ItemDonationRequestItemForm(),
