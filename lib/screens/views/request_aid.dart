@@ -123,10 +123,9 @@ class DropdownMenuExample extends StatefulWidget {
 }
 
 const List<String> list = <String>[
-  'One',
-  'Two',
-  'Thrferfr4fggtrgtrgvtvee',
-  'Four',
+  'Flood',
+  'Earthquake',
+  'Landslide',
 ];
 
 typedef MenuEntry = DropdownMenuEntry<String>;
@@ -152,7 +151,7 @@ class _DropdownMenuExampleState extends State<DropdownMenuExample> {
         });
       },
       dropdownMenuEntries: menuEntries,
-      width: 330,
+      width: 300,
     );
   }
 }
