@@ -25,142 +25,170 @@ class _ItemDonationRequestItemFormState
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8),
-      child: ListView(
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Item Category",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(
-            height: 2,
-          ),
-          ItemTypeDropdown(
-            onSelected: (value) {
-              print(value);
-              setState(() {
-                selectedItemCategory = value;
-              });
-            },
-          ),
-          SizedBox(
-            height: 18,
-          ),
-          Text(
-            "Item Description",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(
-            height: 2,
-          ),
-          SizedBox(
-            // width: 320,
-            height: 45,
-            child: TextFormField(
-              onChanged: (value) {
-                description = value;
-              },
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
+      padding: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: MediaQuery.of(
+          context,
+        ).viewInsets.bottom, //  KEYBOARD SAFE AREA
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          // crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Add Item Details",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: Color.fromARGB(255, 30, 136, 229),
+                IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 15,
                   ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
                 ),
-                hintText: "eg. Rice bags,First aid kits",
-                hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
-              ),
+              ],
             ),
-          ),
-          SizedBox(
-            height: 16,
-          ),
-          Text("Quantity", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(
-            height: 2,
-          ),
-          SizedBox(
-            // width: 320,
-            height: 45,
-            child: TextFormField(
-              onChanged: (value) => qty = value,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: Color.fromARGB(255, 30, 136, 229),
-                  ),
-                ),
-                hintText: "Number or Quantity of items",
-                hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 24,
-          ),
-          if (error != null)
             Text(
-              error!,
-              style: TextStyle(color: Colors.red),
+              "Item Category",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 30, 136, 229),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadiusGeometry.circular(8),
-                ),
-              ),
-              onPressed: () {
+            SizedBox(
+              height: 2,
+            ),
+            ItemTypeDropdown(
+              onSelected: (value) {
+                print(value);
                 setState(() {
-                  error == null;
+                  selectedItemCategory = value;
                 });
-                if (selectedItemCategory == null ||
-                    description.isEmpty ||
-                    qty.isEmpty) {
-                  setState(() {
-                    error = '*Please fill all the fields';
-                  });
-                  return;
-                }
-                addedItems.add(
-                  ItemRequestItem(
-                    category: selectedItemCategory!,
-                    description: description,
-                    quantity: qty,
-                  ),
-                );
-                Navigator.of(context).maybePop();
               },
-              child: Text(
-                'ADD',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            ),
+            SizedBox(
+              height: 18,
+            ),
+            Text(
+              "Item Description",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(
+              height: 2,
+            ),
+            SizedBox(
+              // width: 320,
+              height: 45,
+              child: TextFormField(
+                onChanged: (value) {
+                  description = value;
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: Color.fromARGB(255, 30, 136, 229),
+                    ),
+                  ),
+                  hintText: "eg. Rice bags,First aid kits",
+                  hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
                 ),
               ),
             ),
-          ),
-        ],
+            SizedBox(
+              height: 16,
+            ),
+            Text("Quantity", style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(
+              height: 2,
+            ),
+            SizedBox(
+              // width: 320,
+              height: 45,
+              child: TextFormField(
+                onChanged: (value) => qty = value,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: Color.fromARGB(255, 30, 136, 229),
+                    ),
+                  ),
+                  hintText: "Number or Quantity of items",
+                  hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 24,
+            ),
+            if (error != null)
+              Text(
+                error!,
+                style: TextStyle(color: Colors.red),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 30, 136, 229),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadiusGeometry.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  setState(() {
+                    error == null;
+                  });
+                  if (selectedItemCategory == null ||
+                      description.isEmpty ||
+                      qty.isEmpty) {
+                    setState(() {
+                      error = '*Please fill all the fields';
+                    });
+                    return;
+                  }
+                  addedItems.add(
+                    ItemRequestItem(
+                      category: selectedItemCategory!,
+                      description: description,
+                      quantity: qty,
+                    ),
+                  );
+                  Navigator.of(context).maybePop();
+                },
+                child: Text(
+                  'ADD',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

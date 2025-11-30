@@ -12,7 +12,9 @@ class _DonationsScreenState extends State<DonationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        backgroundColor: Colors.grey[100],
         title: Text("Donation Requests"),
       ),
       body: Container(
@@ -21,17 +23,6 @@ class _DonationsScreenState extends State<DonationsScreen> {
           child: Column(
             children: [
               SearchBox(),
-              Wrap(
-                spacing: 3,
-                children: [
-                  StatusButton(label: "All"),
-                  StatusButton(label: "Pending"),
-                  StatusButton(label: "Approved"),
-                  StatusButton(label: "In Progress"),
-                  StatusButton(label: "Completed"),
-                  StatusButton(label: "Rejected"),
-                ],
-              ),
             ],
           ),
         ),

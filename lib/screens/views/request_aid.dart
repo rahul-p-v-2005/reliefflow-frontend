@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
 
 class RequestAidScreen extends StatefulWidget {
   const RequestAidScreen({super.key});
@@ -20,14 +21,16 @@ class _RequestAidState extends State<RequestAidScreen> {
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
+            spacing: 24,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                height: 8,
-              ),
+              // SizedBox(
+              //   height: 8,
+              // ),
               Center(
                 child: SizedBox(
                   height: 100,
+                  width: 150,
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
@@ -48,7 +51,7 @@ class _RequestAidState extends State<RequestAidScreen> {
                           "Add Photo",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 20,
+                            fontSize: 18,
                           ),
                         ),
                       ],
@@ -56,13 +59,13 @@ class _RequestAidState extends State<RequestAidScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 54,
-              ),
+              // SizedBox(
+              //   height: 54,
+              // ),
               DropdownMenuExample(),
-              SizedBox(
-                height: 24,
-              ),
+              // SizedBox(
+              //   height: 24,
+              // ),
               TextField(
                 minLines: 4,
                 maxLines: 4,
@@ -85,9 +88,51 @@ class _RequestAidState extends State<RequestAidScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 48,
+              InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return SelectLocationScreen();
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.withAlpha(100),
+                      width: 0.9,
+                    ),
+                  ),
+                  padding: EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        color: Color.fromARGB(255, 30, 136, 229),
+                      ),
+                      Text(
+                        "Select location...",
+                        style: TextStyle(
+                          // fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: Colors.grey.withAlpha(220),
+                        ),
+                      ),
+                      Spacer(),
+                      Icon(
+                        Icons.map_outlined,
+                        color: Color.fromARGB(255, 30, 136, 229),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              // SizedBox(
+              //   height: 48,
+              // ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
