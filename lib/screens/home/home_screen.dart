@@ -7,10 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:star_menu/star_menu.dart';
@@ -248,70 +250,12 @@ class _DonationRequestList extends StatelessWidget {
               color: const Color.fromARGB(255, 243, 241, 241),
               thickness: 2.5,
             ),
-            ListTile(
-              leading: Icon(Icons.shopping_bag_outlined),
-              title: Text("Food Supply"),
-              subtitle: Text(
-                "Request ID:",
-                style: TextStyle(color: Colors.grey),
-              ),
-              trailing: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        // spacing: 4,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
-
-                            child: Text(
-                              "Approved",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      "2024-11-20",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              onTap: () {
-                showModalBottomSheet(
-                  context: (context),
-                  builder: (context) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(25),
-                        ),
-                      ),
-                      padding: EdgeInsets.all(24),
-                      child: AidRequestDetails(),
-                    );
-                  },
-                );
-              },
+            RequestDetails(
+              icon: Icons.abc,
+              id: '323',
+              label: 'Fde',
+              status: AidRequestStatus.approved,
+              time: DateTime.now(),
             ),
             Divider(
               color: const Color.fromARGB(255, 243, 241, 241),

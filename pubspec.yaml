@@ -50,6 +50,7 @@ dependencies:
   geolocator: ^14.0.2
   star_menu: ^4.0.1
   image_picker: ^1.2.1
+  debounce_throttle: ^2.0.0
 
 dev_dependencies:
   flutter_test:

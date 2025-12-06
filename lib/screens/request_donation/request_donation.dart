@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/added_items.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_donation_request_item_form.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_type_dropdown.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
 
 enum DonationRequestType { Cash, Items }
 
@@ -94,6 +95,7 @@ class _ItemsBody extends StatelessWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
+                isScrollControlled: true,
                 builder: (context) {
                   return Container(
                     decoration: BoxDecoration(
@@ -194,6 +196,48 @@ class _ItemsBody extends StatelessWidget {
           SizedBox(
             height: 50,
           ),
+          InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return SelectLocationScreen();
+                  },
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.grey.withAlpha(100),
+                  width: 0.9,
+                ),
+              ),
+              padding: EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: Color.fromARGB(255, 30, 136, 229),
+                  ),
+                  Text(
+                    "Select location...",
+                    style: TextStyle(
+                      // fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: Colors.grey.withAlpha(220),
+                    ),
+                  ),
+                  Spacer(),
+                  Icon(
+                    Icons.map_outlined,
+                    color: Color.fromARGB(255, 30, 136, 229),
+                  ),
+                ],
+              ),
+            ),
+          ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -230,7 +274,7 @@ class _CashBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 24,
+            height: 15,
           ),
           Text("Amount", style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(
@@ -238,7 +282,7 @@ class _CashBody extends StatelessWidget {
           ),
           SizedBox(
             // width: 320,
-            height: 48,
+            height: 45,
             child: TextFormField(
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
@@ -262,7 +306,7 @@ class _CashBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 24,
+            height: 15,
           ),
           Text(
             "Short description",
@@ -297,7 +341,7 @@ class _CashBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 24,
+            height: 15,
           ),
           Text(
             "Upload a photo",
@@ -333,7 +377,41 @@ class _CashBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 56,
+            height: 15,
+          ),
+          Text(
+            "Bank Details",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(
+            height: 2,
+          ),
+          SizedBox(
+            height: 45,
+            // width: 320,
+            child: TextFormField(
+              decoration: InputDecoration(
+                hintText: "Enter the UPI number",
+                hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.withAlpha(40)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.withAlpha(100)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: Color.fromARGB(255, 30, 136, 229),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 18,
           ),
           SizedBox(
             width: double.infinity,
