@@ -1,6 +1,13 @@
+import 'dart:convert';
+import 'dart:math' show cos, sqrt, asin;
+
 import 'package:debounce_throttle/debounce_throttle.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 
 class SelectLocationScreen extends StatefulWidget {
@@ -11,216 +18,538 @@ class SelectLocationScreen extends StatefulWidget {
 }
 
 class _SelectLocationScreenState extends State<SelectLocationScreen> {
-  TextEditingController textEditingController = TextEditingController();
+  final TextEditingController _textEditingController = TextEditingController();
+  final Debouncer<String> _debouncer = Debouncer<String>(
+    const Duration(milliseconds: 300),
+    initialValue: '',
+  );
 
-  LocationSearchResponse? response;
-
+  List<Feature> _filteredLocations = [];
   bool _isSearching = false;
+  Position? _currentPosition;
 
-  String getSearchUrl(String query) {
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+    _textEditingController.addListener(() {
+      _debouncer.value = _textEditingController.text;
+    });
+    _debouncer.values.listen(_searchLocations);
+  }
+
+  @override
+  void dispose() {
+    _textEditingController.dispose();
+    super.dispose();
+  }
+
+  /// Get user's current location for distance calculation
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      );
+
+      setState(() {
+        _currentPosition = position;
+      });
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    }
+  }
+
+  /// Calculate distance between two coordinates using Haversine formula
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const p = 0.017453292519943295; // Math.PI / 180
+    final a =
+        0.5 -
+        cos((lat2 - lat1) * p) / 2 +
+        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
+    return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
+  }
+
+  /// Get distance string for a feature
+  String? _getDistanceString(Feature feature) {
+    if (_currentPosition == null || feature.geometry?.coordinates == null) {
+      return null;
+    }
+
+    final coords = feature.geometry!.coordinates!;
+    if (coords.length < 2) return null;
+
+    // Photon returns [longitude, latitude]
+    final distance = _calculateDistance(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      coords[1], // latitude
+      coords[0], // longitude
+    );
+
+    if (distance < 1) {
+      return '${(distance * 1000).toStringAsFixed(0)} m';
+    } else {
+      return '${distance.toStringAsFixed(1)} km';
+    }
+  }
+
+  Uri getSearchUrl(String query) {
     final encodedQuery = Uri.encodeComponent(query);
-    return 'https://photon.komoot.io/api/?q=${query}&limit=10';
+    // Add user location to bias results if available
+    String url = 'https://photon.komoot.io/api/?q=$query&limit=20';
+
+    if (_currentPosition != null) {
+      url +=
+          '&lat=${_currentPosition!.latitude}&lon=${_currentPosition!.longitude}';
+    }
+
+    return Uri.parse(url);
+  }
+
+  /// Deduplicates and filters location results
+  List<Feature> _deduplicateLocations(List<Feature> features) {
+    final seen = <String>{};
+    final uniqueLocations = <Feature>[];
+
+    for (final feature in features) {
+      final props = feature.properties;
+      if (props == null) continue;
+
+      final name = props.name ?? '';
+      final city = props.city ?? '';
+      final district = props.district ?? props.county ?? '';
+      final state = props.state ?? '';
+
+      if (name.isEmpty) continue;
+
+      // Create composite key for deduplication
+      final key =
+          '${name.toLowerCase()}_${city.toLowerCase()}_${district.toLowerCase()}_${state.toLowerCase()}';
+
+      if (!seen.contains(key)) {
+        seen.add(key);
+
+        final osmValue = props.osmValue ?? '';
+
+        // Skip very generic administrative boundaries unless they're cities
+        if ((osmValue == 'administrative' || osmValue == 'boundary') &&
+            props.type != 'city') {
+          continue;
+        }
+
+        uniqueLocations.add(feature);
+      }
+    }
+
+    // Sort by distance if we have current position
+    if (_currentPosition != null) {
+      uniqueLocations.sort((a, b) {
+        final distA = _getDistance(a);
+        final distB = _getDistance(b);
+
+        if (distA == null && distB == null) return 0;
+        if (distA == null) return 1;
+        if (distB == null) return -1;
+
+        return distA.compareTo(distB);
+      });
+    }
+
+    return uniqueLocations;
+  }
+
+  /// Get numeric distance for sorting
+  double? _getDistance(Feature feature) {
+    if (_currentPosition == null || feature.geometry?.coordinates == null) {
+      return null;
+    }
+
+    final coords = feature.geometry!.coordinates!;
+    if (coords.length < 2) return null;
+
+    return _calculateDistance(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      coords[1],
+      coords[0],
+    );
+  }
+
+  /// Gets a readable location type label
+  String _getLocationTypeLabel(Properties? props) {
+    if (props == null) return 'Location';
+
+    final osmValue = props.osmValue?.toLowerCase() ?? '';
+    final type = props.type?.toLowerCase() ?? '';
+
+    if (osmValue == 'city' || type == 'city') return 'City';
+    if (osmValue == 'town' || type == 'town') return 'Town';
+    if (osmValue == 'village' || type == 'village') return 'Village';
+    if (osmValue == 'station') return 'Railway Station';
+    if (osmValue == 'aerodrome') return 'Airport';
+    if (osmValue == 'university' || osmValue == 'college')
+      return 'Educational Institution';
+    if (osmValue == 'stadium') return 'Stadium';
+    if (type == 'county') return 'District';
+
+    return 'Location';
+  }
+
+  /// Formats the subtitle with available location details
+  String _formatSubtitle(Properties? props) {
+    if (props == null) return '';
+
+    final parts = <String>[];
+
+    // Add locality/street if available and different from name
+    if (props.locality != null &&
+        props.locality!.isNotEmpty &&
+        props.locality != props.name) {
+      parts.add(props.locality!);
+    } else if (props.street != null &&
+        props.street!.isNotEmpty &&
+        props.street != props.name) {
+      parts.add(props.street!);
+    }
+
+    // Add city if available and different from name
+    if (props.city != null &&
+        props.city!.isNotEmpty &&
+        props.city != props.name) {
+      parts.add(props.city!);
+    }
+
+    // Add district/county if available
+    final district = props.district ?? props.county;
+    if (district != null &&
+        district.isNotEmpty &&
+        district != props.name &&
+        district != props.city) {
+      parts.add(district);
+    }
+
+    // Always add state if available
+    if (props.state != null && props.state!.isNotEmpty) {
+      parts.add(props.state!);
+    }
+
+    return parts.join(', ');
   }
 
   Future<void> _searchLocations(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _filteredLocations = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
     try {
       setState(() {
         _isSearching = true;
       });
 
-      // search logic here
+      final res = await http.get(getSearchUrl(query));
 
-      // final res = LocationSearchResponse.fromJson(response?.body)
+      if (res.statusCode == 200) {
+        final response = LocationSearchResponse.fromJson(jsonDecode(res.body));
+        final features = response.features ?? [];
 
-      // res.features.first.properties.name
-
-      setState(() {
-        response = LocationSearchResponse();
-        _isSearching = false;
-      });
+        setState(() {
+          _filteredLocations = _deduplicateLocations(features);
+          _isSearching = false;
+        });
+      } else {
+        throw Exception('Failed to search locations');
+      }
     } catch (e) {
+      debugPrint('Error searching locations: $e');
       setState(() {
         _isSearching = false;
       });
-      // Handle error appropriately
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to search locations. Please try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
-
-  @override
-  void initState() {
-    super.initState();
-
-    textEditingController.addListener(
-      () => debouncer.value = textEditingController.text,
-    );
-    debouncer.values.listen((search) => _searchLocations(search));
-  }
-
-  final debouncer = Debouncer<String>(
-    Duration(
-      milliseconds: 200,
-    ),
-    initialValue: '',
-  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "Select a location",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.grey[100],
+        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Container(
-          child: Column(
-            spacing: 16,
-            children: [
-              SizedBox(
-                // width: 320,
-                height: 45,
-                child: TextFormField(
-                  onChanged: (value) {
-                    _searchLocations(value);
-                  },
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: Colors.grey.withAlpha(100),
-                      ),
-                    ),
-                    hintText: "Search an area",
-                    hintStyle: TextStyle(
-                      color: Colors.grey.withAlpha(120),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.5,
-                    ),
-                    prefixIcon: Icon(Icons.search_rounded),
-                    prefixIconColor: Color.fromARGB(255, 30, 136, 229),
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixIcon: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: Center(
-                        child: IconButton.filled(
-                          onPressed: () {},
-                          style: IconButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                            fixedSize: Size(16, 16),
-                            backgroundColor: Colors.grey,
-                          ),
-                          icon: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SelectCurrentLocationScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white,
-                  ),
-                  height: 45,
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.gps_fixed_sharp,
-                          color: Colors.red,
-                          size: 26,
-                        ),
-                        SizedBox(
-                          width: 8,
-                        ),
-                        Text(
-                          "Use current location",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
-                        Spacer(),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                  ),
+        child: Column(
+          spacing: 16,
+          children: [
+            _buildSearchField(),
+            const _SelectFromMapButton(),
+            Expanded(
+              child: _buildLocationList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                  child: Column(
-                    children: [
-                      _LocationList(
-                        icon: Icons.home_outlined,
-                        distance: "5.6 km",
-                        location: "Home",
-                        city: "Azhikode",
-                        district: "Kannur",
-                        state: "Kerala",
-                      ),
-                      _Separator(),
-                      _LocationList(
-                        icon: Icons.location_on_outlined,
-                        distance: "5.0 km",
-                        location: "Kannur Jn",
-                        city: "Padanapalam",
-                        district: "Kannur",
-                        state: "Kerala",
-                      ),
-                      _Separator(),
-                      _LocationList(
-                        icon: Icons.location_on_outlined,
-                        distance: "21 km",
-                        location: "Kannur International Airport",
-                        city: "Mattanur",
-                        district: "Kannur",
-                        state: "Kerala",
-                      ),
-                    ],
+  Widget _buildSearchField() {
+    return SizedBox(
+      height: 45,
+      child: TextFormField(
+        controller: _textEditingController,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Colors.grey.withAlpha(100),
+            ),
+          ),
+          hintText: "Search an area",
+          hintStyle: TextStyle(
+            color: Colors.grey.withAlpha(120),
+            fontWeight: FontWeight.bold,
+            fontSize: 15.5,
+          ),
+          prefixIcon: const Icon(Icons.search_rounded),
+          prefixIconColor: const Color.fromARGB(255, 30, 136, 229),
+          filled: true,
+          fillColor: Colors.white,
+          suffixIcon: _textEditingController.text.isNotEmpty
+              ? IconButton(
+                  onPressed: () {
+                    _textEditingController.clear();
+                    setState(() {
+                      _filteredLocations = [];
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationList() {
+    if (_isSearching) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(12),
+          ),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_textEditingController.text.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(12),
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_rounded,
+                size: 64,
+                color: Colors.grey[300],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Search for your location',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredLocations.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(12),
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.location_off_rounded,
+                size: 64,
+                color: Colors.grey[300],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No locations found',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(12),
+        ),
+      ),
+      child: ListView.separated(
+        itemCount: _filteredLocations.length,
+        separatorBuilder: (context, index) => const _Separator(),
+        itemBuilder: (context, index) {
+          final feature = _filteredLocations[index];
+          final props = feature.properties;
+
+          return _LocationListItem(
+            locationName: props?.name ?? 'Unnamed location',
+            locationType: _getLocationTypeLabel(props),
+            subtitle: _formatSubtitle(props),
+            distance: _getDistanceString(feature),
+            onTap: () async {
+              // Navigate to map screen for fine-tuning
+              final result = await Navigator.push<Feature>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelectCurrentLocationScreen(
+                    preselectedLocation: feature,
                   ),
                 ),
+              );
+
+              // If user confirmed from map, return to previous screen
+              if (result != null && mounted) {
+                Navigator.pop(context, result);
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SelectFromMapButton extends StatelessWidget {
+  const _SelectFromMapButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final result = await Navigator.push<Feature>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SelectCurrentLocationScreen(),
+          ),
+        );
+
+        // If user confirmed a location from map, return it
+        if (result != null && context.mounted) {
+          Navigator.pop(context, result);
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
+        ),
+        height: 45,
+        child: const Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Row(
+            children: [
+              Icon(
+                Icons.gps_fixed_sharp,
+                color: Colors.red,
+                size: 26,
+              ),
+              SizedBox(width: 8),
+              Text(
+                "Select location from map",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+              Spacer(),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.grey,
               ),
             ],
           ),
@@ -231,67 +560,120 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
 }
 
 class _Separator extends StatelessWidget {
-  const _Separator({
-    super.key,
-  });
+  const _Separator();
 
   @override
   Widget build(BuildContext context) {
     return Divider(
       color: Colors.grey[100],
-      thickness: 2,
-      height: 3,
+      thickness: 1,
+      height: 1,
     );
   }
 }
 
-class _LocationList extends StatelessWidget {
-  final IconData icon;
-  final String distance;
-  final String location;
-  final String city;
-  final String district;
-  final String state;
+class _LocationListItem extends StatelessWidget {
+  final String locationName;
+  final String locationType;
+  final String subtitle;
+  final String? distance;
+  final VoidCallback onTap;
 
-  const _LocationList({
-    required this.icon,
-    required this.distance,
-    required this.location,
-    required this.city,
-    required this.district,
-    required this.state,
+  const _LocationListItem({
+    required this.locationName,
+    required this.locationType,
+    required this.subtitle,
+    this.distance,
+    required this.onTap,
   });
+
+  IconData _getIconForLocationType(String type) {
+    switch (type.toLowerCase()) {
+      case 'city':
+      case 'town':
+      case 'village':
+        return Icons.location_city_rounded;
+      case 'railway station':
+        return Icons.train_rounded;
+      case 'airport':
+        return Icons.flight_rounded;
+      case 'educational institution':
+        return Icons.school_rounded;
+      case 'stadium':
+        return Icons.stadium_rounded;
+      case 'district':
+        return Icons.map_rounded;
+      default:
+        return Icons.location_on_outlined;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      visualDensity: VisualDensity(horizontal: 0, vertical: -1),
-      leading: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 27.5,
-          ),
-          Text(
-            distance,
-            style: TextStyle(fontSize: 9.0),
-          ),
-        ],
-      ),
-      title: Text(
-        location,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-        ),
-      ),
-      subtitle: Text(
-        "$city,$district,$state",
-        style: TextStyle(
-          color: Colors.grey,
-          fontSize: 11.0,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _getIconForLocationType(locationType),
+                  size: 28,
+                  color: const Color.fromARGB(255, 30, 136, 229),
+                ),
+                if (distance != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    distance!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    locationName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Colors.grey[400],
+            ),
+          ],
         ),
       ),
     );

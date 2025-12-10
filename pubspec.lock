@@ -25,22 +25,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  bottom_inset_observer:
-    dependency: transitive
-    description:
-      name: bottom_inset_observer
-      sha256: cbfb01e0e07cc4922052701786d5e607765a6f54e1844f41061abf8744519a7d
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
-  bottom_sheet:
-    dependency: "direct main"
-    description:
-      name: bottom_sheet
-      sha256: efd28f52357d23e1c01eaeb45466b407f1e29318305bd6d10baf814fda18bd7e
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.4"
   characters:
     dependency: transitive
     description:
@@ -376,14 +360,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.8"
-  iconoir_flutter:
-    dependency: "direct main"
-    description:
-      name: iconoir_flutter
-      sha256: "31c63923123d61318dd7ed1d931e080d8c1d5b5702871d15e0bed9651faa6f19"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.4.0"
   image_picker:
     dependency: "direct main"
     description:

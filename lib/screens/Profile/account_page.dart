@@ -199,7 +199,7 @@ class _AccountState extends State<Account> {
                   child: Column(
                     children: [
                       SwitchListTile(
-                        activeColor: Colors.blue,
+                        activeThumbColor: Colors.blue,
                         value: val1,
                         onChanged: (bool? value) {
                           setState(() {

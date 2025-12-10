@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/large_relief_centers_map.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ReliefCentersMap extends StatelessWidget {
   const ReliefCentersMap({super.key});

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
-import 'package:reliefflow_frontend_public_app/screens/auth/signup_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/notificatio_page.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {

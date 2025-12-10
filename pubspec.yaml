@@ -34,17 +34,17 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  glassmorphism: ^3.0.0
+  # glassmorphism: ^3.0.0
   weather: ^3.2.1
   intl: ^0.20.2
-  icon_forest: ^1.1.8
+  # icon_forest: ^1.1.8
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   url_launcher: ^6.3.2
-  bottom_sheet: ^4.0.4
+  # bottom_sheet: ^4.0.4
   google_fonts: ^6.3.2
   persistent_bottom_nav_bar: ^6.2.1
-  iconoir_flutter: ^6.4.0
+  # iconoir_flutter: ^6.4.0
   http: ^1.6.0
   shared_preferences: ^2.5.3
   geolocator: ^14.0.2
@@ -53,6 +53,8 @@ dependencies:
   debounce_throttle: ^2.0.0
   geocoding: ^4.0.0
 
+  glassmorphism: any
+  icon_forest: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -74,7 +76,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/
+    - assets/images/logo1.png
+    - assets/images/logo2.png
+    - assets/images/logo3.png
+    - assets/images/mainlogo.png
+    - assets/images/pexels-artempodrez-7233099.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

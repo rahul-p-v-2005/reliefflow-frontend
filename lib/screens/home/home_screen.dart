@@ -3,21 +3,15 @@ import 'package:flutter/material.dart';
 // import 'package:icon_forest/iconoir.dart';
 // import 'package:icon_forest/mbi_combi.dart';
 // import 'package:icon_forest/mbi_linecons.dart';
-import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
-import 'package:reliefflow_frontend_public_app/env.dart';
-import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:star_menu/star_menu.dart';
-import 'package:weather/weather.dart';
-import 'package:icon_forest/gala_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -126,9 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _AidRequestList extends StatelessWidget {
-  const _AidRequestList({
-    super.key,
-  });
+  const _AidRequestList();
 
   @override
   Widget build(BuildContext context) {
@@ -224,9 +216,7 @@ class _AidRequestList extends StatelessWidget {
 }
 
 class _DonationRequestList extends StatelessWidget {
-  const _DonationRequestList({
-    super.key,
-  });
+  const _DonationRequestList();
 
   @override
   Widget build(BuildContext context) {
@@ -334,9 +324,7 @@ class _DonationRequestList extends StatelessWidget {
 }
 
 class _RequestButtonsRow extends StatelessWidget {
-  const _RequestButtonsRow({
-    super.key,
-  });
+  const _RequestButtonsRow();
 
   @override
   Widget build(BuildContext context) {

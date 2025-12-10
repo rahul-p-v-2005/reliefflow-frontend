@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:icon_forest/iconoir.dart';
 import 'package:intl/intl.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
-import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:weather/weather.dart';
 
 import 'package:geolocator/geolocator.dart';
@@ -140,7 +137,7 @@ class _WeatherCardState extends State<WeatherCard> {
 class RetryButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const RetryButton({required this.onPressed});
+  const RetryButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +150,6 @@ class RetryButton extends StatelessWidget {
 
 class _CurrentWeatherDetails extends StatefulWidget {
   const _CurrentWeatherDetails({
-    super.key,
     required this.lat,
     required this.lon,
   });
@@ -314,7 +310,6 @@ class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
 
 class _CurrentAtmosphere extends StatelessWidget {
   const _CurrentAtmosphere({
-    super.key,
     required this.humidity,
     required this.wind,
     required this.cloud,
@@ -358,7 +353,6 @@ class _CurrentAtmosphere extends StatelessWidget {
 
 class _FiveDayForecastWidget extends StatefulWidget {
   const _FiveDayForecastWidget({
-    super.key,
     required this.lat,
     required this.lon,
   });
@@ -490,7 +484,7 @@ class _ForecastItem extends StatelessWidget {
 
         // const SizedBox(height: 4),
         Image.network(
-          _getWeatherIconUrl(weather?.weatherIcon ?? ''),
+          _getWeatherIconUrl(weather.weatherIcon ?? ''),
           width: 44,
         ),
         // const SizedBox(height: 4),
@@ -507,6 +501,6 @@ class _ForecastItem extends StatelessWidget {
 }
 
 String _getWeatherIconUrl(String icon) {
-  final iconUrl = 'https://openweathermap.org/img/wn/${icon}@2x.png';
+  final iconUrl = 'https://openweathermap.org/img/wn/$icon@2x.png';
   return iconUrl;
 }

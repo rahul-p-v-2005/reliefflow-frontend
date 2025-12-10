@@ -1,11 +1,8 @@
-import 'dart:collection';
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/added_items.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_donation_request_item_form.dart';
-import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_type_dropdown.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
 
 enum DonationRequestType { Cash, Items }
@@ -77,10 +74,67 @@ class _RequestDonationState extends State<RequestDonation> {
   }
 }
 
-class _ItemsBody extends StatelessWidget {
-  const _ItemsBody({
-    super.key,
-  });
+class _ItemsBody extends StatefulWidget {
+  const _ItemsBody();
+
+  @override
+  State<_ItemsBody> createState() => _ItemsBodyState();
+}
+
+class _ItemsBodyState extends State<_ItemsBody> {
+  Feature? _selectedLocation;
+
+  Future<void> _selectLocation() async {
+    final result = await Navigator.push<Feature>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SelectLocationScreen(),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result;
+      });
+
+      // Now you have the selected location with coordinates
+      final coords = result.geometry?.coordinates;
+      final props = result.properties;
+
+      print('Selected Location:');
+      print('Name: ${props?.name}');
+      print('Address: ${_formatAddress(props)}');
+      print('Coordinates: ${coords?[1]}, ${coords?[0]}'); // lat, lon
+
+      // You can now save this location to your backend
+      // or use it in your donation request
+    }
+  }
+
+  String _formatAddress(Properties? props) {
+    if (props == null) return '';
+
+    final parts = <String>[];
+
+    if (props.locality != null && props.locality!.isNotEmpty) {
+      parts.add(props.locality!);
+    }
+
+    if (props.city != null && props.city!.isNotEmpty) {
+      parts.add(props.city!);
+    }
+
+    final district = props.district ?? props.county;
+    if (district != null && district.isNotEmpty) {
+      parts.add(district);
+    }
+
+    if (props.state != null && props.state!.isNotEmpty) {
+      parts.add(props.state!);
+    }
+
+    return parts.join(', ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,48 +250,142 @@ class _ItemsBody extends StatelessWidget {
           SizedBox(
             height: 50,
           ),
+          // InkWell(
+          //   onTap: () {
+          //     Navigator.of(context).push(
+          //       MaterialPageRoute(
+          //         builder: (context) {
+          //           return SelectLocationScreen();
+          //         },
+          //       ),
+          //     );
+          //   },
+          //   child: Container(
+          //     decoration: BoxDecoration(
+          //       borderRadius: BorderRadius.circular(8),
+          //       border: Border.all(
+          //         color: Colors.grey.withAlpha(100),
+          //         width: 0.9,
+          //       ),
+          //     ),
+          //     padding: EdgeInsets.all(12),
+          //     child: Row(
+          //       children: [
+          //         Icon(
+          //           Icons.location_on_outlined,
+          //           color: Color.fromARGB(255, 30, 136, 229),
+          //         ),
+          //         Text(
+          //           "Select location...",
+          //           style: TextStyle(
+          //             // fontWeight: FontWeight.bold,
+          //             fontSize: 17,
+          //             color: Colors.grey.withAlpha(220),
+          //           ),
+          //         ),
+          //         Spacer(),
+          //         Icon(
+          //           Icons.map_outlined,
+          //           color: Color.fromARGB(255, 30, 136, 229),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+
+          // Location selector
           InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return SelectLocationScreen();
-                  },
-                ),
-              );
-            },
+            onTap: _selectLocation,
+            borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey.withAlpha(100),
-                  width: 0.9,
-                ),
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
               ),
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Icon(
-                    Icons.location_on_outlined,
-                    color: Color.fromARGB(255, 30, 136, 229),
+                    Icons.location_on,
+                    color: _selectedLocation != null
+                        ? Colors.blue
+                        : Colors.grey,
+                    size: 28,
                   ),
-                  Text(
-                    "Select location...",
-                    style: TextStyle(
-                      // fontWeight: FontWeight.bold,
-                      fontSize: 17,
-                      color: Colors.grey.withAlpha(220),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedLocation?.properties?.name ??
+                              'Select location',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: _selectedLocation != null
+                                ? Colors.black
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        if (_selectedLocation != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatAddress(_selectedLocation!.properties),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  Spacer(),
                   Icon(
-                    Icons.map_outlined,
-                    color: Color.fromARGB(255, 30, 136, 229),
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey[400],
                   ),
                 ],
               ),
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Display coordinates (for debugging/verification)
+          if (_selectedLocation != null) ...[
+            Card(
+              color: Colors.blue[50],
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Selected Coordinates:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Lat: ${_selectedLocation!.geometry?.coordinates?[1].toStringAsFixed(6)}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      'Lon: ${_selectedLocation!.geometry?.coordinates?[0].toStringAsFixed(6)}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -262,9 +410,7 @@ class _ItemsBody extends StatelessWidget {
 }
 
 class _CashBody extends StatelessWidget {
-  const _CashBody({
-    super.key,
-  });
+  const _CashBody();
 
   @override
   Widget build(BuildContext context) {

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 
 class RequestDetails extends StatefulWidget {
   final IconData? icon;
@@ -30,14 +27,16 @@ class _RequestDetailsState extends State<RequestDetails> {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      dense: true,
+      visualDensity: VisualDensity(horizontal: 0, vertical: -1),
       leading: widget.icon != null ? Icon(widget.icon) : null,
       title: Text(
         widget.label,
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
       ),
       subtitle: Text(
         "Request ID: $Widget.id",
-        style: TextStyle(color: Colors.grey),
+        style: TextStyle(color: Colors.grey, fontSize: 13),
       ),
       trailing: SizedBox(
         width: 74,
@@ -77,7 +76,6 @@ class _RequestDetailsState extends State<RequestDetails> {
 
 class _StatusWidget extends StatelessWidget {
   const _StatusWidget({
-    super.key,
     required this.status,
   });
 

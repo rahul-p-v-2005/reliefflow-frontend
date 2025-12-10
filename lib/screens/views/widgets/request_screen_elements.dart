@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/aid_request_screen.dart';
 
 class SearchBox extends StatefulWidget {
   const SearchBox({
@@ -89,18 +88,18 @@ class _SearchBoxState extends State<SearchBox> {
             width: 16,
             height: 16,
             child: Center(
-              child: IconButton.filled(
+              child: IconButton(
                 onPressed: () {},
-                style: IconButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  fixedSize: Size(16, 16),
-                  backgroundColor: Colors.grey,
-                ),
+                // style: IconButton.styleFrom(
+                //   padding: EdgeInsets.zero,
+                //   visualDensity: VisualDensity.compact,
+                //   fixedSize: Size(16, 16),
+                //    backgroundColor: Colors.grey,
+                // ),
                 icon: Icon(
                   Icons.close_rounded,
                   size: 14,
-                  color: Colors.white,
+                  color: Colors.grey,
                 ),
               ),
             ),
@@ -117,6 +116,7 @@ class StatusButton extends StatefulWidget {
 
   final void Function(bool)? onSelected;
   const StatusButton({
+    super.key,
     required this.label,
     required this.isSelected,
     this.onSelected,

@@ -25,9 +25,7 @@ class _RequestStatusState extends State<RequestStatus> {
 }
 
 class _RequestDetails extends StatelessWidget {
-  const _RequestDetails({
-    super.key,
-  });
+  const _RequestDetails();
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +67,7 @@ class _RequestDetails extends StatelessWidget {
 }
 
 class _RequestStatusTimeLine extends StatelessWidget {
-  const _RequestStatusTimeLine({super.key});
+  const _RequestStatusTimeLine();
 
   @override
   Widget build(BuildContext context) {

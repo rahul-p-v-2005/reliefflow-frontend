@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
