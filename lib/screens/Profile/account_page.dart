@@ -163,6 +163,11 @@ class _AccountState extends State<Account> {
                             ),
                           );
                         },
+                        trailing: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 18,
+                          color: Colors.grey[400],
+                        ),
                       ),
                       ListTile(
                         leading: Icon(Icons.lock),
@@ -174,6 +179,11 @@ class _AccountState extends State<Account> {
                             ),
                           );
                         },
+                        trailing: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 18,
+                          color: Colors.grey[400],
+                        ),
                       ),
                     ],
                   ),
