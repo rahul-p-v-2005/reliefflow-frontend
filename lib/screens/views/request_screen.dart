@@ -11,12 +11,12 @@ class AidsScreen extends StatefulWidget {
 
 class _AidsScreenState extends State<AidsScreen> {
   /// NEW: Add "all" option
-  String currentSelectedStatus = "all"; // "all" or AidRequestStatus.name
+  String currentSelectedStatus = "All"; // "all" or AidRequestStatus.name
 
   /// Build a combined list: ["all", pending, approved, rejected ...]
   List<String> get statusFilters => [
-    "all",
-    ...AidRequestStatus.values.map((e) => e.name), //... spread operator
+    "All",
+    ...RequestStatus.values.map((e) => e.name), //... spread operator
   ];
 
   @override
@@ -25,7 +25,10 @@ class _AidsScreenState extends State<AidsScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.grey[100],
-        title: const Text("Aid Requests"),
+        title: const Text(
+          "Requests",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

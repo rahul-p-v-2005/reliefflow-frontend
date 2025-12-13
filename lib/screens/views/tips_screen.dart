@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_screen_elements.dart';
 
-class DonationsScreen extends StatefulWidget {
-  const DonationsScreen({super.key});
+class TipsScreen extends StatefulWidget {
+  const TipsScreen({super.key});
 
   @override
-  State<DonationsScreen> createState() => _DonationsScreenState();
+  State<TipsScreen> createState() => _TipsScreenState();
 }
 
-class _DonationsScreenState extends State<DonationsScreen> {
+class _TipsScreenState extends State<TipsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.grey[100],
-        title: Text("Donation Requests"),
+        title: Text(
+          "Tips",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Container(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              SearchBox(),
+              //SearchBox(),
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 // import 'package:icon_forest/icon_forest.dart';
 // import 'package:icon_forest/iconoir.dart';
 // import 'package:icon_forest/mbi_combi.dart';
@@ -9,7 +10,7 @@ import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details
 import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details_item.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:star_menu/star_menu.dart';
 
@@ -125,92 +126,307 @@ class _AidRequestList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
       ),
-
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          spacing: 9,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'My Aid Requests',
-              style: TextStyle(fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Recent Aid Requests",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                Text(
+                  "Track your active requests",
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            Divider(
+          ),
+          Container(
+            //separator
+            width: double.infinity,
+            height: 2,
+            decoration: BoxDecoration(
               color: const Color.fromARGB(255, 243, 241, 241),
-              thickness: 2.5,
             ),
-            ListTile(
-              title: Text("Flood Relief Aid"),
-              subtitle: Text(
-                "Request ID:",
-                style: TextStyle(color: Colors.grey),
-              ),
-              trailing: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        // spacing: 4,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
+          ),
+          Container(
+            //list of request items
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              spacing: 4,
+              children: [
+                RequestDetailsItem(
+                  // icon: Icons.emergency_rounded,
+                  label: "Flood Relief",
+                  id: "AID-001",
+                  time: DateTime.now(),
+                  location: "Azhikode",
+                  status: RequestStatus.Approved,
+                ),
+                RequestDetailsItem(
+                  // icon: Icons.emergency_rounded,
+                  label: "Flood Relief",
+                  id: "AID-002",
+                  status: RequestStatus.Completed,
+                  time: DateTime.now(),
+                  location: "Kannur",
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                            child: Text(
-                              "Approved",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+class RequestDetailsItem extends StatelessWidget {
+  const RequestDetailsItem({
+    super.key,
+    // this.icon,
+    required this.label,
+    required this.id,
+    required this.status,
+    required this.time,
+    required this.location,
+    this.type,
+  });
+
+  final DonationRequestType? type;
+
+  // final IconData? icon;
+  final String label;
+  final String id;
+  final RequestStatus status;
+  final DateTime time;
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: (context),
+          builder: (context) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
+              ),
+              padding: EdgeInsets.all(24),
+              child: AidRequestDetails(),
+            );
+          },
+        );
+      },
+      child: Container(
+        //single list item
+        decoration: BoxDecoration(
+          color: status.color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: BorderSide(
+              color:
+                  //  Colors.blue,
+                  type != null
+                  ? const Color.fromARGB(255, 1, 130, 6)
+                  : Colors.blue,
+              width: 4,
+            ),
+            // right: BorderSide(color: Colors.green, width: 1),
+            // bottom: BorderSide(color: Colors.green, width: 1),
+            // top: BorderSide(color: Colors.green, width: 1),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              // Container(
+              //   color: Color.fromARGB(255, 30, 136, 229),
+              //   height: 4,
+              //   width: 2,
+              // ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Icon(
+                  // icon,
+                  _getTypeIcon(type),
+                  fill: 0,
+                  color: type != null
+                      ? const Color.fromARGB(255, 1, 130, 6)
+                      : Colors.blue,
+                ),
+              ),
+              SizedBox(
+                width: 8,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            //fontSize:
                           ),
-                        ],
-                      ),
+                        ),
+                        _StatusWidget(
+                          status: status,
+                        ),
+                      ],
                     ),
                     Text(
-                      "2024-11-20",
-                      style: TextStyle(color: Colors.grey),
+                      "ID: $id",
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 6,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _BulletList(
+                          location: location,
+                        ),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(time),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Colors.black45,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              onTap: () {
-                showModalBottomSheet(
-                  context: (context),
-                  builder: (context) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(25),
-                        ),
-                      ),
-                      padding: EdgeInsets.all(24),
-                      child: AidRequestDetails(),
-                    );
-                  },
-                );
-              },
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getTypeIcon(DonationRequestType? type) {
+    switch (type) {
+      case DonationRequestType.Cash:
+        return Icons.currency_rupee;
+      case DonationRequestType.Items:
+        return Icons.inventory_2_outlined;
+      default:
+        return Icons.emergency_rounded;
+    }
+  }
+}
+
+class _StatusWidget extends StatelessWidget {
+  const _StatusWidget({
+    required this.status,
+  });
+
+  final RequestStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 22,
+      width: 99,
+      decoration: BoxDecoration(
+        shape: BoxShape.rectangle,
+        color: status.color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 3,
+          horizontal: 5,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              status.displayIcon,
+              color: Colors.white,
+              size: 17,
+            ),
+            Text(
+              status.displayName,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BulletList extends StatelessWidget {
+  final String location;
+  const _BulletList({
+    required this.location,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Row(
+          children: [
+            Container(
+              height: 7,
+              width: 7,
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(
+              width: 4,
+            ),
+            Text(
+              location,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black45,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -221,103 +437,70 @@ class _DonationRequestList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
       ),
-
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          spacing: 9,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'My Donation Requests',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Divider(
-              color: const Color.fromARGB(255, 243, 241, 241),
-              thickness: 2.5,
-            ),
-            RequestDetails(
-              icon: Icons.abc,
-              id: '323',
-              label: 'Fde',
-              status: AidRequestStatus.approved,
-              time: DateTime.now(),
-            ),
-            Divider(
-              color: const Color.fromARGB(255, 243, 241, 241),
-              thickness: 2.5,
-            ),
-            ListTile(
-              leading: Icon(Icons.currency_rupee_rounded),
-              title: Text("Cash for Rehabilation"),
-              subtitle: Text(
-                "Request ID:",
-                style: TextStyle(color: Colors.grey),
-              ),
-              trailing: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        // spacing: 4,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
-
-                            child: Text(
-                              "Approved",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      "2024-11-20",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Recent Donation Requests",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-              ),
-              onTap: () {
-                showModalBottomSheet(
-                  context: (context),
-                  builder: (context) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(25),
-                        ),
-                      ),
-                      padding: EdgeInsets.all(24),
-                      child: AidRequestDetails(),
-                    );
-                  },
-                );
-              },
+                Text(
+                  "Requesting financial & item support",
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          Container(
+            //separator
+            width: double.infinity,
+            height: 2,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 243, 241, 241),
+            ),
+          ),
+          Container(
+            //list of request items
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              spacing: 4,
+              children: [
+                RequestDetailsItem(
+                  // icon: Icons.emergency_rounded,
+                  label: "Cash Donation",
+                  id: "AID-001",
+                  time: DateTime.now(),
+                  location: "Azhikode",
+                  status: RequestStatus.Approved,
+                  type: DonationRequestType.Cash,
+                ),
+                RequestDetailsItem(
+                  // icon: Icons.emergency_rounded,
+                  label: "Item Donation",
+                  id: "AID-002",
+                  status: RequestStatus.Completed,
+                  time: DateTime.now(),
+                  location: "Kannur",
+                  type: DonationRequestType.Items,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,54 +1,53 @@
 import 'package:flutter/material.dart';
 
-enum AidRequestStatus {
-  pending,
-  approved,
-  inProgress,
-  completed,
-  rejected;
+enum RequestStatus {
+  Pending,
+  Approved,
+  InProgress,
+  Completed,
+  Rejected;
 
   Color get color {
     switch (this) {
-      case AidRequestStatus.pending:
-        return Colors.orange;
-      case AidRequestStatus.approved:
+      case RequestStatus.Pending:
+        return Colors.amber;
+      case RequestStatus.Approved:
         return Colors.green;
-      case AidRequestStatus.inProgress:
+      case RequestStatus.InProgress:
+        return Colors.orange;
+      case RequestStatus.Completed:
         return Colors.blue;
-      case AidRequestStatus.completed:
-        return Colors.grey;
-      case AidRequestStatus.rejected:
+      case RequestStatus.Rejected:
         return Colors.red;
     }
   }
 
   String get displayName {
     switch (this) {
-      case AidRequestStatus.pending:
+      case RequestStatus.Pending:
         return "Pending";
-      case AidRequestStatus.approved:
+      case RequestStatus.Approved:
         return "Approved";
-      case AidRequestStatus.inProgress:
+      case RequestStatus.InProgress:
         return "In Progress";
-      case AidRequestStatus.completed:
+      case RequestStatus.Completed:
         return "Completed";
-      case AidRequestStatus.rejected:
+      case RequestStatus.Rejected:
         return "Rejected";
     }
   }
 
   IconData get displayIcon {
     switch (this) {
-      case AidRequestStatus.pending:
+      case RequestStatus.Pending:
         return Icons.access_time;
-      case AidRequestStatus.approved:
+      case RequestStatus.Approved:
         return Icons.check_circle_outline_rounded;
-      case AidRequestStatus.inProgress:
+      case RequestStatus.InProgress:
         return Icons.error_outline;
-
-      case AidRequestStatus.completed:
-        return Icons.check_circle_outline_rounded;
-      case AidRequestStatus.rejected:
+      case RequestStatus.Completed:
+        return Icons.task_alt_rounded;
+      case RequestStatus.Rejected:
         return Icons.cancel_outlined;
     }
   }

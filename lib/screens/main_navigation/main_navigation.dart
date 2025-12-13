@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/aid_request_screen.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/donation_request_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/request_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/views/tips_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -31,13 +31,13 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.request_page),
-        title: 'Aids',
+        title: 'Requests',
         activeColorPrimary: Colors.blue,
         inactiveColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.volunteer_activism),
-        title: "Donations",
+        title: "Tips",
         activeColorPrimary: Colors.blue,
         inactiveColorPrimary: Colors.grey,
       ),
@@ -59,7 +59,7 @@ class _MainNavigationState extends State<MainNavigation> {
       screens: [
         CustomNavBarScreen(screen: const HomeScreen()),
         CustomNavBarScreen(screen: const AidsScreen()),
-        CustomNavBarScreen(screen: const DonationsScreen()),
+        CustomNavBarScreen(screen: const TipsScreen()),
         CustomNavBarScreen(screen: const Account()), // Profile screen
       ],
       confineToSafeArea: true,

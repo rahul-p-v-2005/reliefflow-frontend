@@ -36,28 +36,32 @@ class _NotificationPageState extends State<NotificationPage> {
                         color: Colors.red,
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'New',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                        Text(
-                          'Emergency Alert:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'FLood warning for Sector 4 Evacuate ',
-                          // maxLines: 2,
-                          // style: TextStyle(color: Colors.grey),
-                        ),
-                        Text(
-                          'immediately.',
-                          maxLines: 2,
-                          // style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Text(
+                          //   'New',
+                          //   style: TextStyle(color: Colors.blue),
+                          // ),
+                          Text(
+                            'Emergency Alert:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Flood warning for Sector 4 Evacuate ',
+                            // maxLines: 2,
+                            // style: TextStyle(color: Colors.grey),
+                          ),
+                          Text(
+                            'immediately.',
+                            maxLines: 2,
+                            // style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

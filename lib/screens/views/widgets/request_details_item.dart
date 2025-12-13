@@ -7,7 +7,7 @@ class RequestDetails extends StatefulWidget {
   final IconData? icon;
   final String label;
   final String id;
-  final AidRequestStatus status;
+  final RequestStatus status;
   final DateTime time;
 
   const RequestDetails({
@@ -79,7 +79,7 @@ class _StatusWidget extends StatelessWidget {
     required this.status,
   });
 
-  final AidRequestStatus status;
+  final RequestStatus status;
 
   @override
   Widget build(BuildContext context) {
