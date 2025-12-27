@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_screen_elements.dart';
 
-class AidsScreen extends StatefulWidget {
-  const AidsScreen({super.key});
+class RequestListScreen extends StatefulWidget {
+  const RequestListScreen({super.key});
 
   @override
-  State<AidsScreen> createState() => _AidsScreenState();
+  State<RequestListScreen> createState() => _RequestListScreenState();
 }
 
-class _AidsScreenState extends State<AidsScreen> {
+class _RequestListScreenState extends State<RequestListScreen> {
   /// NEW: Add "all" option
   String currentSelectedStatus = "All"; // "all" or AidRequestStatus.name
 

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -102,13 +104,26 @@ class _SelectCurrentLocationScreenState
       _locationAddress = '';
     });
 
+    log(
+      'Fetching address for location: ${location.latitude}, ${location.longitude}',
+    );
+
     try {
       // Photon reverse geocoding endpoint
       final url = Uri.parse(
         'https://photon.komoot.io/reverse?lon=${location.longitude}&lat=${location.latitude}',
       );
 
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'ReliefflowApp/1.0 (contact:alansherhan10@gmail.com)',
+        },
+      );
+
+      log(
+        'Reverse geocoding response status: ${response.statusCode}, url: $url',
+      );
 
       if (response.statusCode == 200) {
         final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
@@ -126,7 +141,7 @@ class _SelectCurrentLocationScreenState
         }
       }
     } catch (e) {
-      debugPrint('Error fetching address: $e');
+      log('Error fetching address: $e');
       setState(() {
         _locationName = 'Unable to fetch address';
         _locationAddress =
@@ -139,20 +154,26 @@ class _SelectCurrentLocationScreenState
     }
   }
 
+  Timer? _debounceTimer;
+
   void _onMapMoved() {
     final center = _mapController.camera.center;
-
-    // Only update if moved significantly (avoid too many API calls)
     final distance = const Distance().as(
       LengthUnit.Meter,
       _currentCenter,
       center,
     );
 
-    if (distance > 50) {
-      // Moved more than 50 meters
-      _currentCenter = center;
-      _fetchAddressForLocation(center);
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Only check distance if significant move
+    if (distance > 100) {
+      // Increased to 100m
+      _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+        _currentCenter = center;
+        _fetchAddressForLocation(center);
+      });
     }
   }
 
@@ -499,6 +520,8 @@ class _SelectCurrentLocationScreenState
   @override
   void dispose() {
     _mapController.dispose();
+
+    _debounceTimer?.cancel();
     super.dispose();
   }
 }

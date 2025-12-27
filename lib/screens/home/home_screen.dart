@@ -6,8 +6,8 @@ import 'package:intl/intl.dart';
 // import 'package:icon_forest/mbi_linecons.dart';
 import 'package:reliefflow_frontend_public_app/components/layout/header.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/request_aid.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_details_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/request_aid_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/request_donation.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_details_item.dart';
@@ -229,7 +229,7 @@ class RequestDetailsItem extends StatelessWidget {
                 ),
               ),
               padding: EdgeInsets.all(24),
-              child: AidRequestDetails(),
+              child: AidRequestDetailsBottomSheet(),
             );
           },
         );

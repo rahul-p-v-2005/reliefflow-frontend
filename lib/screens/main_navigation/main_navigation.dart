@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'package:reliefflow_frontend_public_app/screens/Profile/account_page.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/request_screen.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/tips_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/profile/account_page.dart';
+import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
+import 'package:reliefflow_frontend_public_app/screens/tips/tips_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/requests_list/requests_list_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -52,30 +54,33 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return PersistentTabView.custom(
-      context,
-      controller: _controller,
-      itemCount: _navBarsItems().length,
-      screens: [
-        CustomNavBarScreen(screen: const HomeScreen()),
-        CustomNavBarScreen(screen: const AidsScreen()),
-        CustomNavBarScreen(screen: const TipsScreen()),
-        CustomNavBarScreen(screen: const Account()), // Profile screen
-      ],
-      confineToSafeArea: true,
-      handleAndroidBackButtonPress: true,
-      stateManagement: true,
-      hideNavigationBarWhenKeyboardAppears: true,
-      customWidget: CustomNavBar(
-        items: _navBarsItems(),
-        selectedIndex: _controller.index,
-        onItemSelected: (index) {
-          setState(() {
-            _controller.index = index;
-          });
-        },
+    return BlocProvider(
+      create: (context) => AccountCubit()..loadAccountDetails(),
+      child: PersistentTabView.custom(
+        context,
+        controller: _controller,
+        itemCount: _navBarsItems().length,
+        screens: [
+          CustomNavBarScreen(screen: const HomeScreen()),
+          CustomNavBarScreen(screen: const RequestListScreen()),
+          CustomNavBarScreen(screen: const TipsScreen()),
+          CustomNavBarScreen(screen: const AccountPage()), // Profile screen
+        ],
+        confineToSafeArea: true,
+        handleAndroidBackButtonPress: true,
+        stateManagement: true,
+        hideNavigationBarWhenKeyboardAppears: true,
+        customWidget: CustomNavBar(
+          items: _navBarsItems(),
+          selectedIndex: _controller.index,
+          onItemSelected: (index) {
+            setState(() {
+              _controller.index = index;
+            });
+          },
+        ),
+        backgroundColor: Colors.white,
       ),
-      backgroundColor: Colors.white,
     );
   }
 }

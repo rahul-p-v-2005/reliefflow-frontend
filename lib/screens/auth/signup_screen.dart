@@ -59,7 +59,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                           Text(
-                            'Making a diffrence,Together',
+                            'Making a difference,Together',
                             style: TextStyle(fontSize: 15, color: Colors.grey),
                           ),
                           SizedBox(height: 24),

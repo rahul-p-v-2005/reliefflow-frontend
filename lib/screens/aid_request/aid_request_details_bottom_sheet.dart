@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/request_status.dart';
 
-class AidRequestDetails extends StatefulWidget {
-  const AidRequestDetails({super.key});
+class AidRequestDetailsBottomSheet extends StatefulWidget {
+  const AidRequestDetailsBottomSheet({super.key});
 
   @override
-  State<AidRequestDetails> createState() => _AidRequestDetailsState();
+  State<AidRequestDetailsBottomSheet> createState() =>
+      _AidRequestDetailsBottomSheetState();
 }
 
-class _AidRequestDetailsState extends State<AidRequestDetails> {
+class _AidRequestDetailsBottomSheetState
+    extends State<AidRequestDetailsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(

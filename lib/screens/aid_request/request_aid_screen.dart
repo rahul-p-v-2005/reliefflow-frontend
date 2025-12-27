@@ -22,7 +22,7 @@ class _RequestAidState extends State<RequestAidScreen> {
             child: Padding(
               padding: const EdgeInsets.all(32.0),
               child: Column(
-                spacing: 24,
+                spacing: 16,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // SizedBox(
@@ -72,6 +72,30 @@ class _RequestAidState extends State<RequestAidScreen> {
                     maxLines: 4,
                     decoration: InputDecoration(
                       hintText: "Describe your request",
+                      hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey.withAlpha(40),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey.withAlpha(100),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(255, 30, 136, 229),
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Add address",
                       hintStyle: TextStyle(color: Colors.grey.withAlpha(120)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),

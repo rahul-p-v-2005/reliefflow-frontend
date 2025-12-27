@@ -25,8 +25,13 @@ class _RequestDonationState extends State<RequestDonation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text("Request Donation"),
+        backgroundColor: Colors.grey[100],
+        title: Text(
+          "Request Donation",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(32.0),

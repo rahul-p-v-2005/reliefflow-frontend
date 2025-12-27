@@ -1,84 +1,29 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
-import 'package:reliefflow_frontend_public_app/screens/Profile/change_password_page.dart';
-import 'package:reliefflow_frontend_public_app/screens/Profile/edit_profile.dart';
+import 'package:reliefflow_frontend_public_app/models/user/user_data_response/user.dart';
+import 'package:reliefflow_frontend_public_app/models/user/user_data_response/user_data_response.dart';
+import 'package:reliefflow_frontend_public_app/screens/profile/change_password_page.dart';
+import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
+import 'package:reliefflow_frontend_public_app/screens/profile/edit_profile.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class Account extends StatefulWidget {
-  const Account({super.key});
+class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
 
   @override
-  State<Account> createState() => _AccountState();
+  State<AccountPage> createState() => _AccountPageState();
 }
 
-class _AccountState extends State<Account> {
+class _AccountPageState extends State<AccountPage> {
   File? _selectedImage;
-  bool val = true;
-  String userName = 'Loading...';
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUserProfile();
-  }
-
-  // Fetch user profile from API
-  Future<void> _fetchUserProfile() async {
-    const profile = '$kBaseUrl/public/profile';
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(
-        kTokenStorageKey,
-      ); // ✅ Remove quotes - use the constant directly
-
-      print('Token found: ${token != null}'); // Debug
-
-      if (token == null || token.isEmpty) {
-        setState(() {
-          userName = 'Not logged in';
-          isLoading = false;
-        });
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse(profile),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          userName = data['data']['name'] ?? 'User';
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          userName = 'Error loading name';
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        userName = 'Error loading name';
-        isLoading = false;
-      });
-      print('Error fetching user profile: $e');
-    }
-  }
 
   // 1. Function to pick image from gallery
   Future<void> _pickImage() async {
@@ -100,9 +45,14 @@ class _AccountState extends State<Account> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Profile'),
-        backgroundColor: Colors.blue[50],
+        title: Text(
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        // backgroundColor: Colors.blue[50],
+        backgroundColor: Colors.grey[100],
       ),
       body: Container(
         child: Padding(
@@ -137,7 +87,30 @@ class _AccountState extends State<Account> {
                                 size: 120,
                               ),
                       ),
-                      Text(userName, style: TextStyle(fontSize: 30)),
+                      BlocBuilder<AccountCubit, AccountState>(
+                        builder: (context, state) {
+                          switch (state) {
+                            case AccountInitial():
+                            case AccountLoading():
+                              return SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(),
+                              );
+                            case AccountLoaded(user: final user):
+                              return Text(
+                                user.name ?? 'No Name',
+                                style: TextStyle(fontSize: 30),
+                              );
+
+                            case AccountError():
+                              return Text(
+                                'Error loading user',
+                                style: TextStyle(fontSize: 30),
+                              );
+                          }
+                        },
+                      ),
                       Text(
                         'Public User',
                         style: TextStyle(fontSize: 15, color: Colors.grey),
@@ -156,10 +129,15 @@ class _AccountState extends State<Account> {
                       ListTile(
                         leading: Icon(Icons.edit),
                         title: Text('Edit Profile'),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const EditProfileScreen(),
+                        onTap: () async {
+                          if (!mounted) return;
+                          if (context.read<AccountCubit>().state
+                              is! AccountLoaded) {
+                            return;
+                          }
+                          await Navigator.of(context).push<User?>(
+                            MaterialPageRoute<User?>(
+                              builder: (context) => EditProfileScreen(),
                             ),
                           );
                         },

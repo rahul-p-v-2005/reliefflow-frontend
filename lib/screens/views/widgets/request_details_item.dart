@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/aid_request_details.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_details_bottom_sheet.dart';
 
 class RequestDetails extends StatefulWidget {
   final IconData? icon;
@@ -65,7 +65,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                 ),
               ),
               padding: EdgeInsets.all(24),
-              child: AidRequestDetails(),
+              child: AidRequestDetailsBottomSheet(),
             );
           },
         );
