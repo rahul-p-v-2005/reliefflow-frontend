@@ -8,12 +8,12 @@ final class RequestsListInitial extends RequestsListState {}
 final class RequestsListLoading extends RequestsListState {}
 
 final class RequestsListLoaded extends RequestsListState {
-  final List<AidRequest> aidRequests;
   final List<DonationRequest> donationRequests;
+  final List<DonationRequest> allDonationRequests;
 
   RequestsListLoaded({
-    required this.aidRequests,
     required this.donationRequests,
+    required this.allDonationRequests,
   });
 }
 

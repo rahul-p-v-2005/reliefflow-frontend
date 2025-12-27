@@ -12,6 +12,16 @@ class AddedItems extends ValueNotifier {
     _addedItems.add(item);
     notifyListeners();
   }
+
+  void remove(int index) {
+    _addedItems.removeAt(index);
+    notifyListeners();
+  }
+
+  void clear() {
+    _addedItems.clear();
+    notifyListeners();
+  }
 }
 
 AddedItems addedItems = AddedItems([]);
