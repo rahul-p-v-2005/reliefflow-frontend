@@ -260,18 +260,18 @@ class _TipDetailScreenState extends State<TipDetailScreen>
           // Header
           Container(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 10,
-              bottom: 15,
-              left: 15,
-              right: 15,
+              top: MediaQuery.of(context).padding.top + 6,
+              bottom: 10,
+              left: 10,
+              right: 10,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [color, color.withOpacity(0.8)],
               ),
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
               ),
             ),
             child: Column(
@@ -279,9 +279,16 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                       onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.all(8),
+                      constraints: BoxConstraints(),
                     ),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +297,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                             tipDetail!.title,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -298,20 +305,14 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                             tipDetail!.description,
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: 12,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    // ADD BOOKMARK BUTTON
-                    // IconButton(
-                    //   icon: Icon(
-                    //     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    //     color: Colors.white,
-                    //   ),
-                    //   onPressed: _toggleBookmark,
-                    // ),
                   ],
                 ),
               ],
@@ -320,25 +321,35 @@ class _TipDetailScreenState extends State<TipDetailScreen>
 
           // Tab Bar
           Container(
-            margin: EdgeInsets.all(15),
+            margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.grey[700],
               isScrollable: false,
+              labelPadding: EdgeInsets.zero,
               tabs: [
-                Tab(child: Text('📋 Before', style: TextStyle(fontSize: 13))),
-                Tab(child: Text('⚠️ During', style: TextStyle(fontSize: 13))),
-                Tab(child: Text('✅ After', style: TextStyle(fontSize: 13))),
+                Tab(
+                  height: 36,
+                  child: Text('📋 Before', style: TextStyle(fontSize: 12)),
+                ),
+                Tab(
+                  height: 36,
+                  child: Text('⚠️ During', style: TextStyle(fontSize: 12)),
+                ),
+                Tab(
+                  height: 36,
+                  child: Text('✅ After', style: TextStyle(fontSize: 12)),
+                ),
               ],
             ),
           ),
@@ -364,22 +375,22 @@ class _TipDetailScreenState extends State<TipDetailScreen>
 
   Widget _buildTipsListWithContacts(List<TipItem> tips, Color phaseColor) {
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 15),
+      padding: EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         children: [
           // Info Banner
           Container(
-            padding: EdgeInsets.all(15),
-            margin: EdgeInsets.only(bottom: 15),
+            padding: EdgeInsets.all(10),
+            margin: EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
               color: phaseColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: phaseColor.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: phaseColor, size: 20),
-                SizedBox(width: 10),
+                Icon(Icons.info_outline, color: phaseColor, size: 16),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _tabController.index == 0
@@ -388,7 +399,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                         ? 'Follow these during the emergency'
                         : 'Recovery steps after the emergency',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       color: phaseColor,
                       fontWeight: FontWeight.w500,
                     ),
@@ -403,17 +414,17 @@ class _TipDetailScreenState extends State<TipDetailScreen>
             final isChecked = checkedItems.contains(tip.text);
 
             return Container(
-              margin: EdgeInsets.only(bottom: 12),
+              margin: EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: isChecked ? Colors.green[50] : Colors.white,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isChecked
                       ? Colors.green
                       : tip.critical
                       ? Colors.red[300]!
                       : Colors.grey[300]!,
-                  width: tip.critical ? 2 : 1,
+                  width: tip.critical ? 1.5 : 1,
                 ),
               ),
               child: Material(
@@ -427,9 +438,9 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                         ? 'during'
                         : 'after',
                   ),
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: EdgeInsets.all(15),
+                    padding: EdgeInsets.all(10),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -438,9 +449,9 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
                           color: isChecked ? Colors.green : Colors.grey,
-                          size: 24,
+                          size: 20,
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,31 +459,26 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                               Text(
                                 tip.text,
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  decoration: isChecked
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  color: isChecked
-                                      ? Colors.grey[600]
-                                      : Colors.black,
+                                  fontSize: 13,
+                                  color: Colors.black,
                                 ),
                               ),
                               if (tip.critical) ...[
-                                SizedBox(height: 8),
+                                SizedBox(height: 4),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
+                                    horizontal: 6,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.red[100],
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     '⚠️ CRITICAL',
                                     style: TextStyle(
                                       color: Colors.red[800],
-                                      fontSize: 11,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -490,12 +496,12 @@ class _TipDetailScreenState extends State<TipDetailScreen>
           }).toList(),
 
           if (tipDetail!.videos.isNotEmpty) ...[
-            SizedBox(height: 10),
+            SizedBox(height: 8),
             Container(
-              padding: EdgeInsets.all(15),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.red[50],
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.red[200]!),
               ),
               child: Column(
@@ -503,21 +509,21 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.play_circle, color: Colors.red, size: 20),
-                      SizedBox(width: 10),
+                      Icon(Icons.play_circle, color: Colors.red, size: 16),
+                      SizedBox(width: 8),
                       Text(
                         'Video Tutorials',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
                   ...tipDetail!.videos.map((video) {
                     return Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: 6),
                       child: InkWell(
                         onTap: () async {
                           final Uri videoUri = Uri.parse(video.url);
@@ -529,15 +535,15 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                           }
                         },
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                padding: EdgeInsets.all(8),
+                                padding: EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: Colors.red[100],
                                   shape: BoxShape.circle,
@@ -545,10 +551,10 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                                 child: Icon(
                                   Icons.play_arrow,
                                   color: Colors.red,
-                                  size: 20,
+                                  size: 16,
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,13 +563,14 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                                       video.title,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                     Text(
                                       video.duration,
                                       style: TextStyle(
                                         color: Colors.grey[600],
-                                        fontSize: 12,
+                                        fontSize: 11,
                                       ),
                                     ),
                                   ],
@@ -572,7 +579,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                               Icon(
                                 Icons.open_in_new,
                                 color: Colors.grey,
-                                size: 20,
+                                size: 16,
                               ),
                             ],
                           ),
@@ -583,17 +590,17 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 ],
               ),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 8),
           ],
 
           // Emergency Contacts (at bottom of each tab)
           if (tipDetail!.emergencyContacts.isNotEmpty) ...[
-            SizedBox(height: 10),
+            SizedBox(height: 8),
             Container(
-              padding: EdgeInsets.all(15),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.red[50],
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.red[200]!),
               ),
               child: Column(
@@ -601,28 +608,28 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.phone, color: Colors.red, size: 20),
-                      SizedBox(width: 10),
+                      Icon(Icons.phone, color: Colors.red, size: 16),
+                      SizedBox(width: 8),
                       Text(
                         'Emergency Contacts',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
                   ...tipDetail!.emergencyContacts.map((contact) {
                     return Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: 6),
                       child: InkWell(
                         onTap: () => _makePhoneCall(contact.number),
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -630,7 +637,10 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                               Expanded(
                                 child: Text(
                                   contact.name,
-                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                               Text(
@@ -638,6 +648,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                                 style: TextStyle(
                                   color: Colors.red,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
@@ -649,7 +660,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 ],
               ),
             ),
-            SizedBox(height: 15),
+            SizedBox(height: 10),
           ],
         ],
       ),

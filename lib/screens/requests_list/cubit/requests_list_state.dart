@@ -10,10 +10,14 @@ final class RequestsListLoading extends RequestsListState {}
 final class RequestsListLoaded extends RequestsListState {
   final List<DonationRequest> donationRequests;
   final List<DonationRequest> allDonationRequests;
+  final List<AidRequest> aidRequests;
+  final List<AidRequest> allAidRequests;
 
   RequestsListLoaded({
     required this.donationRequests,
     required this.allDonationRequests,
+    required this.aidRequests,
+    required this.allAidRequests,
   });
 }
 

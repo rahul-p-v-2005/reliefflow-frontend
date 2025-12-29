@@ -240,14 +240,14 @@ class _TipsScreenState extends State<TipsScreen> {
             children: [
               // Header
               Container(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.blue[700]!, Colors.blue[500]!],
                   ),
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
                 ),
                 child: Column(
@@ -257,32 +257,40 @@ class _TipsScreenState extends State<TipsScreen> {
                       'Emergency Tips',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 3),
                     Text(
                       'Stay prepared, stay safe',
                       style: TextStyle(
                         color: Colors.blue[100],
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
-                    SizedBox(height: 15),
+                    SizedBox(height: 10),
                     // Search Bar
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
                         onChanged: _filterTips,
                         decoration: InputDecoration(
                           hintText: 'Search for tips...',
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          hintStyle: TextStyle(fontSize: 13),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.all(15),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
@@ -292,30 +300,30 @@ class _TipsScreenState extends State<TipsScreen> {
 
               // Emergency Quick Actions
               Container(
-                margin: EdgeInsets.all(15),
-                padding: EdgeInsets.all(15),
+                margin: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.red[200]!, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red[200]!, width: 1.5),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.warning_amber, color: Colors.red, size: 20),
-                        SizedBox(width: 8),
+                        Icon(Icons.warning_amber, color: Colors.red, size: 16),
+                        SizedBox(width: 6),
                         Text(
                           'Quick Actions',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 14,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
+                    SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -334,7 +342,7 @@ class _TipsScreenState extends State<TipsScreen> {
                               }
                             },
                           ),
-                          SizedBox(width: 10),
+                          SizedBox(width: 8),
                           _quickActionButton(
                             'Call 108 (Ambulance)',
                             Icons.local_hospital,
@@ -349,7 +357,7 @@ class _TipsScreenState extends State<TipsScreen> {
                               }
                             },
                           ),
-                          SizedBox(width: 10),
+                          SizedBox(width: 8),
                           _quickActionButton(
                             'Call 101 (Fire)',
                             Icons.local_fire_department,
@@ -364,28 +372,6 @@ class _TipsScreenState extends State<TipsScreen> {
                               }
                             },
                           ),
-                          // SizedBox(width: 10),
-                          // _quickActionButton(
-                          //   'CPR Steps',
-                          //   Icons.favorite,
-                          //   Colors.pink,
-                          //   onPressed: () {
-                          //     Navigator.push(
-                          //       context,
-                          //       MaterialPageRoute(
-                          //         builder: (context) => TipDetailScreen(
-                          //           tipSlug: 'cpr-steps',
-                          //         ),
-                          //       ),
-                          //     );
-                          //   },
-                          // ),
-                          // SizedBox(width: 10),
-                          // _quickActionButton(
-                          //   'Fire Safety',
-                          //   Icons.local_fire_department,
-                          //   Colors.orange,
-                          // ),
                         ],
                       ),
                     ),
@@ -416,7 +402,7 @@ class _TipsScreenState extends State<TipsScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 15),
+                        padding: EdgeInsets.symmetric(horizontal: 12),
                         itemCount: filteredTips.length,
                         itemBuilder: (context, index) {
                           final tip = filteredTips[index];
@@ -440,21 +426,21 @@ class _TipsScreenState extends State<TipsScreen> {
     return InkWell(
       onTap: onPressed,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
-            SizedBox(width: 8),
+            Icon(icon, color: color, size: 16),
+            SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
           ],
@@ -470,15 +456,15 @@ class _TipsScreenState extends State<TipsScreen> {
     final isBookmarked = bookmarkedTipIds.contains(tip.id);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 15),
+      margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -496,21 +482,21 @@ class _TipsScreenState extends State<TipsScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: EdgeInsets.all(15),
+            padding: EdgeInsets.all(10),
             child: Row(
               children: [
                 // Icon Container
                 Container(
-                  padding: EdgeInsets.all(15),
+                  padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: color, size: 30),
+                  child: Icon(icon, color: color, size: 22),
                 ),
-                SizedBox(width: 15),
+                SizedBox(width: 10),
                 // Content
                 Expanded(
                   child: Column(
@@ -519,56 +505,45 @@ class _TipsScreenState extends State<TipsScreen> {
                       Text(
                         tip.title,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 2),
                       Text(
                         tip.description,
                         style: TextStyle(
                           color: Colors.grey[600],
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 4),
                       Row(
                         children: [
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: priorityColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               tip.priority.toUpperCase(),
                               style: TextStyle(
                                 color: priorityColor,
-                                fontSize: 10,
+                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                           Spacer(),
-                          // Bookmark Button
-                          // IconButton(
-                          //   icon: Icon(
-                          //     isBookmarked
-                          //         ? Icons.bookmark
-                          //         : Icons.bookmark_border,
-                          //     color: isBookmarked ? Colors.amber : Colors.grey,
-                          //   ),
-                          //   onPressed: () => _toggleBookmark(tip.id),
-                          //   padding: EdgeInsets.zero,
-                          //   constraints: BoxConstraints(),
-                          // ),
-                          SizedBox(width: 8),
                           Icon(
                             Icons.arrow_forward_ios,
-                            size: 16,
+                            size: 14,
                             color: Colors.grey,
                           ),
                         ],

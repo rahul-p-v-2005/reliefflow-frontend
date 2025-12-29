@@ -5,6 +5,7 @@ import 'package:reliefflow_frontend_public_app/screens/profile/account_page.dart
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/tips/tips_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/requests_list/requests_list_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -54,8 +55,15 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AccountCubit()..loadAccountDetails(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => AccountCubit()..loadAccountDetails(),
+        ),
+        BlocProvider(
+          create: (context) => RequestsListCubit()..loadRequests(),
+        ),
+      ],
       child: PersistentTabView.custom(
         context,
         controller: _controller,
