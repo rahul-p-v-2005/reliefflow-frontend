@@ -21,7 +21,10 @@ class MyApp extends StatelessWidget {
 }
 
 ThemeData _buildTheme(Brightness brightness) {
-  final base = ThemeData(brightness: brightness);
+  final base = ThemeData(
+    brightness: brightness,
+    primaryColor: Color(0xFF1E88E5),
+  );
   return base.copyWith(
     textTheme: GoogleFonts.poppinsTextTheme(base.textTheme),
   );

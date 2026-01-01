@@ -9,8 +9,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/models/calamity_type.dart';
-import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 
 class RequestAidScreen extends StatefulWidget {
   const RequestAidScreen({super.key});
@@ -29,6 +31,7 @@ class _RequestAidState extends State<RequestAidScreen> {
   bool _isSubmitting = false;
   String? _typesError;
   File? _selectedImage;
+  Feature? _selectedLocationFeature;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -260,6 +263,15 @@ class _RequestAidState extends State<RequestAidScreen> {
       request.fields['calamityType'] = _selectedCalamityType!.id!;
       request.fields['address[addressLine1]'] = _addressController.text.trim();
 
+      if (_selectedLocationFeature?.geometry?.coordinates != null) {
+        final coords = _selectedLocationFeature!.geometry!.coordinates!;
+        request.fields['location[type]'] = 'Point';
+        request.fields['location[coordinates][0]'] = coords[0]
+            .toString(); // lon
+        request.fields['location[coordinates][1]'] = coords[1]
+            .toString(); // lat
+      }
+
       // Add description if provided
       if (_descriptionController.text.trim().isNotEmpty) {
         request.fields['description'] = _descriptionController.text.trim();
@@ -316,7 +328,7 @@ class _RequestAidState extends State<RequestAidScreen> {
             debugPrint('Could not refresh RequestsListCubit: $e');
           }
         }
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         final data = json.decode(response.body);
         _showSnackBar(
@@ -568,6 +580,27 @@ class _RequestAidState extends State<RequestAidScreen> {
     );
   }
 
+  IconData _getCalamityIcon(String? name) {
+    if (name == null) return Icons.emergency_outlined;
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('flood')) return Icons.water_drop_outlined;
+    if (lowerName.contains('fire')) return Icons.local_fire_department_outlined;
+    if (lowerName.contains('earthquake')) return Icons.landscape_outlined;
+    if (lowerName.contains('storm') || lowerName.contains('cyclone')) {
+      return Icons.cyclone_outlined;
+    }
+    if (lowerName.contains('drought')) return Icons.wb_sunny_outlined;
+    if (lowerName.contains('tsunami')) return Icons.waves_outlined;
+    if (lowerName.contains('landslide')) return Icons.terrain_outlined;
+    if (lowerName.contains('epidemic') || lowerName.contains('virus')) {
+      return Icons.coronavirus_outlined;
+    }
+    if (lowerName.contains('war') || lowerName.contains('conflict')) {
+      return Icons.warning_amber_rounded;
+    }
+    return Icons.emergency_outlined;
+  }
+
   Widget _buildCalamityTypeDropdown() {
     return Container(
       decoration: BoxDecoration(
@@ -628,30 +661,51 @@ class _RequestAidState extends State<RequestAidScreen> {
           else
             DropdownButtonFormField<CalamityType>(
               value: _selectedCalamityType,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              dropdownColor: Colors.white,
               decoration: InputDecoration(
                 hintText: 'Select calamity type',
                 hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1E88E5)),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1E88E5),
+                    width: 1.5,
+                  ),
                 ),
+                filled: true,
+                fillColor: Colors.grey[50],
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 12,
+                  vertical: 16,
                 ),
               ),
               items: _calamityTypes.map((type) {
+                final icon = _getCalamityIcon(type.calamityName);
                 return DropdownMenuItem(
                   value: type,
-                  child: Text(type.calamityName ?? 'Unknown'),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 20, color: const Color(0xFF1E88E5)),
+                      const SizedBox(width: 12),
+                      Text(
+                        type.calamityName ?? 'Unknown',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
@@ -790,6 +844,17 @@ class _RequestAidState extends State<RequestAidScreen> {
     );
   }
 
+  String _formatAddress(Properties? props) {
+    if (props == null) return '';
+    final parts = <String>[];
+    if (props.locality?.isNotEmpty == true) parts.add(props.locality!);
+    if (props.city?.isNotEmpty == true) parts.add(props.city!);
+    final district = props.district ?? props.county;
+    if (district?.isNotEmpty == true) parts.add(district!);
+    if (props.state?.isNotEmpty == true) parts.add(props.state!);
+    return parts.join(', ');
+  }
+
   Widget _buildLocationPicker() {
     return Container(
       decoration: BoxDecoration(
@@ -804,12 +869,26 @@ class _RequestAidState extends State<RequestAidScreen> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          // Dismiss keyboard and un-focus any active field
+          FocusScope.of(context).unfocus();
+
+          final result = await Navigator.of(context).push<Feature>(
             MaterialPageRoute(
-              builder: (context) => SelectLocationScreen(),
+              builder: (context) => const SelectCurrentLocationScreen(),
             ),
           );
+
+          if (result != null) {
+            setState(() {
+              _selectedLocationFeature = result;
+              // Auto-fill address if available and empty
+              if (_addressController.text.isEmpty &&
+                  result.properties?.name != null) {
+                _addressController.text = result.properties!.name!;
+              }
+            });
+          }
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -819,12 +898,16 @@ class _RequestAidState extends State<RequestAidScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E88E5).withOpacity(0.1),
+                  color: _selectedLocationFeature != null
+                      ? Colors.red.withOpacity(0.1)
+                      : const Color(0xFF1E88E5).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.map,
-                  color: Color(0xFF1E88E5),
+                child: Icon(
+                  Icons.location_on,
+                  color: _selectedLocationFeature != null
+                      ? Colors.red
+                      : const Color(0xFF1E88E5),
                   size: 24,
                 ),
               ),
@@ -833,27 +916,38 @@ class _RequestAidState extends State<RequestAidScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Select Location on Map',
-                      style: TextStyle(
+                    Text(
+                      _selectedLocationFeature?.properties?.name ??
+                          'Select Location on Map',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Color(0xFF333333),
                       ),
                     ),
-                    Text(
-                      'Tap to choose your exact location',
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
+                    if (_selectedLocationFeature != null)
+                      Text(
+                        _formatAddress(_selectedLocationFeature!.properties),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        'Tap to choose your exact location',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
               const Icon(
                 Icons.chevron_right,
-                color: Color(0xFF1E88E5),
               ),
             ],
           ),

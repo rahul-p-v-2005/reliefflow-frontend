@@ -87,14 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(color: Colors.white),
                 ),
                 backgroundColor: Colors.blue,
-                onPressed: () {
-                  Navigator.of(context).push(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) {
                         return RequestAidScreen();
                       },
                     ),
                   );
+                  if (result == true) {
+                    if (context.mounted) {
+                      context.read<RequestsListCubit>().refresh();
+                    }
+                  }
                 },
               ),
               ActionChip(
@@ -103,12 +108,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Request Donation',
                   style: TextStyle(color: Colors.white),
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute<dynamic>(
                       builder: (context) => const RequestDonation(),
                     ),
                   );
+                  if (result == true) {
+                    if (context.mounted) {
+                      context.read<RequestsListCubit>().refresh();
+                    }
+                  }
                 },
               ),
             ],
@@ -195,7 +205,7 @@ class _AidRequestList extends StatelessWidget {
         if (state is RequestsListLoading) {
           isLoading = true;
         } else if (state is RequestsListLoaded) {
-          requests = state.aidRequests.take(5).toList();
+          requests = state.aidRequests.take(3).toList();
         } else if (state is RequestsListError) {
           error = state.message;
         }
@@ -1186,6 +1196,20 @@ class _AidRequestBottomSheet extends StatelessWidget {
     }
   }
 
+  String _getImageUrl(String url) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return url;
+    }
+    // kBaseUrl includes '/api' but uploads are at root '/uploads'
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
+    if (url.startsWith('/')) {
+      return '$origin$url';
+    }
+    return '$origin/$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(request.status);
@@ -1306,6 +1330,25 @@ class _AidRequestBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
+          // Description
+          if (request.description != null &&
+              request.description!.isNotEmpty) ...[
+            const Text(
+              'Description',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              request.description!,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+          ],
+
           // Image Section (if available)
           if (request.imageUrl != null && request.imageUrl!.isNotEmpty) ...[
             const Text(
@@ -1318,7 +1361,10 @@ class _AidRequestBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: () => _showFullScreenImage(context, request.imageUrl!),
+              onTap: () => _showFullScreenImage(
+                context,
+                _getImageUrl(request.imageUrl!),
+              ),
               child: Container(
                 width: double.infinity,
                 height: 180,
@@ -1334,7 +1380,7 @@ class _AidRequestBottomSheet extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       Image.network(
-                        request.imageUrl!,
+                        _getImageUrl(request.imageUrl!),
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
@@ -1648,6 +1694,20 @@ class _AidRequestTrackingScreen extends StatelessWidget {
     }
   }
 
+  String _getImageUrl(String url) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return url;
+    }
+    // kBaseUrl includes '/api' but uploads are at root '/uploads'
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
+    if (url.startsWith('/')) {
+      return '$origin$url';
+    }
+    return '$origin/$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     const themeColor = Color(0xFF1E88E5);
@@ -1722,6 +1782,9 @@ class _AidRequestTrackingScreen extends StatelessWidget {
                       'Type',
                       request.calamityTypeName ?? 'Aid Request',
                     ),
+                    if (request.description != null &&
+                        request.description!.isNotEmpty)
+                      _buildDetailRow('Description', request.description!),
                     _buildDetailRow('Priority', request.priority.toUpperCase()),
                     _buildDetailRow(
                       'Submitted On',
@@ -1738,6 +1801,86 @@ class _AidRequestTrackingScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Photo Evidence Card (if available)
+            if (request.imageUrl != null && request.imageUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.photo_library_outlined,
+                            size: 18,
+                            color: Color(0xFF1E88E5),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Photo Evidence',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => _HomeFullScreenImageView(
+                                imageUrl: _getImageUrl(request.imageUrl!),
+                              ),
+                            ),
+                          );
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _getImageUrl(request.imageUrl!),
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 200,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 200,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // Timeline
             Padding(
               padding: const EdgeInsets.all(16),

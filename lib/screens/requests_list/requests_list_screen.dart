@@ -484,11 +484,17 @@ class _AidRequestBottomSheet extends StatelessWidget {
     if (url.startsWith('http') || url.startsWith('https')) {
       return url;
     }
+
+    // kBaseUrl includes '/api' but uploads are at root '/uploads'
+    // We need to use the origin (scheme://host:port)
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
     // Handle specific relative paths if needed, otherwise assume it's relative to base
     if (url.startsWith('/')) {
-      return '$kBaseUrl$url';
+      return '$origin$url';
     }
-    return '$kBaseUrl/$url';
+    return '$origin/$url';
   }
 
   IconData _getStatusIcon(String status) {
@@ -917,6 +923,21 @@ class AidRequestTrackingScreen extends StatelessWidget {
     }
   }
 
+  String _getImageUrl(String url) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return url;
+    }
+
+    // kBaseUrl includes '/api' but uploads are at root '/uploads'
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
+    if (url.startsWith('/')) {
+      return '$origin$url';
+    }
+    return '$origin/$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     const themeColor = Color(0xFF1E88E5);
@@ -1001,6 +1022,9 @@ class AidRequestTrackingScreen extends StatelessWidget {
                             ).format(request.createdAt!)
                           : 'N/A',
                     ),
+                    if (request.description != null &&
+                        request.description!.isNotEmpty)
+                      _DetailRow('Description', request.description!),
                     _DetailRow('Current Status', request.status.toUpperCase()),
                     if (request.address.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -1048,7 +1072,7 @@ class AidRequestTrackingScreen extends StatelessWidget {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => _FullScreenImageView(
-                                imageUrl: request.imageUrl!,
+                                imageUrl: _getImageUrl(request.imageUrl!),
                               ),
                             ),
                           );
@@ -1056,7 +1080,7 @@ class AidRequestTrackingScreen extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: Image.network(
-                            request.imageUrl!,
+                            _getImageUrl(request.imageUrl!),
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,

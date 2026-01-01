@@ -11,7 +11,6 @@ import 'package:reliefflow_frontend_public_app/models/location_search_response/f
 import 'package:reliefflow_frontend_public_app/models/location_search_response/geometry.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
-import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
 
 class SelectCurrentLocationScreen extends StatefulWidget {
   final Feature? preselectedLocation;
@@ -29,16 +28,29 @@ class SelectCurrentLocationScreen extends StatefulWidget {
 class _SelectCurrentLocationScreenState
     extends State<SelectCurrentLocationScreen> {
   late MapController _mapController;
-  LatLng _currentCenter = LatLng(11.917, 75.335);
+  LatLng _currentCenter = LatLng(
+    11.917,
+    75.335,
+  ); // Default to Kannur/Kerala area
   bool _isLoadingAddress = false;
   String _locationName = 'Loading...';
   String _locationAddress = '';
   Feature? _selectedFeature;
+  Timer? _debounceTimer;
+
+  // Search functionality
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  List<Feature> _searchResults = [];
+  bool _isSearching = false;
+  bool _showSearchResults = false;
+  Timer? _searchDebounceTimer;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    _searchController.addListener(_onSearchChanged);
 
     // If coming from search screen with preselected location
     if (widget.preselectedLocation != null) {
@@ -46,6 +58,7 @@ class _SelectCurrentLocationScreenState
     } else {
       // Start with default location and fetch address
       _fetchAddressForLocation(_currentCenter);
+      _getCurrentLocation(); // Auto-fetch current location on load
     }
   }
 
@@ -55,6 +68,95 @@ class _SelectCurrentLocationScreenState
       _currentCenter = LatLng(coords[1], coords[0]); // lat, lon
       _selectedFeature = widget.preselectedLocation;
       _updateLocationDetails(widget.preselectedLocation!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _debounceTimer?.cancel();
+    _searchDebounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_searchDebounceTimer?.isActive ?? false) _searchDebounceTimer!.cancel();
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (_searchController.text.isNotEmpty) {
+        _searchLocations(_searchController.text);
+      } else {
+        setState(() {
+          _searchResults = [];
+          _showSearchResults = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _searchLocations(String query) async {
+    if (query.isEmpty) return;
+
+    setState(() {
+      _isSearching = true;
+      _showSearchResults = true;
+    });
+
+    try {
+      // Use Photon API for search (consistent with existing app)
+      String url =
+          'https://photon.komoot.io/api/?q=${Uri.encodeComponent(query)}&limit=5';
+
+      // Bias towards current center
+      url += '&lat=${_currentCenter.latitude}&lon=${_currentCenter.longitude}';
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
+        if (mounted) {
+          setState(() {
+            _searchResults = data.features ?? [];
+            _isSearching = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _searchResults = [];
+            _isSearching = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Search error: $e');
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  void _selectSearchResult(Feature feature) {
+    final coords = feature.geometry?.coordinates;
+    if (coords != null && coords.length >= 2) {
+      final lat = coords[1];
+      final lng = coords[0];
+      final newLocation = LatLng(lat, lng);
+
+      setState(() {
+        _currentCenter = newLocation;
+        _showSearchResults = false;
+        _searchController.text = feature.properties?.name ?? '';
+        _selectedFeature = feature;
+        _updateLocationDetails(feature);
+      });
+
+      _mapController.move(newLocation, 15);
+      _searchFocusNode.unfocus();
     }
   }
 
@@ -109,7 +211,6 @@ class _SelectCurrentLocationScreenState
     );
 
     try {
-      // Photon reverse geocoding endpoint
       final url = Uri.parse(
         'https://photon.komoot.io/reverse?lon=${location.longitude}&lat=${location.latitude}',
       );
@@ -117,12 +218,8 @@ class _SelectCurrentLocationScreenState
       final response = await http.get(
         url,
         headers: {
-          'User-Agent': 'ReliefflowApp/1.0 (contact:alansherhan10@gmail.com)',
+          'User-Agent': 'ReliefflowApp/1.0',
         },
-      );
-
-      log(
-        'Reverse geocoding response status: ${response.statusCode}, url: $url',
       );
 
       if (response.statusCode == 200) {
@@ -154,50 +251,32 @@ class _SelectCurrentLocationScreenState
     }
   }
 
-  Timer? _debounceTimer;
-
   void _onMapMoved() {
     final center = _mapController.camera.center;
-    final distance = const Distance().as(
-      LengthUnit.Meter,
-      _currentCenter,
-      center,
-    );
-
-    // Cancel previous timer
+    // Debounce address fetching
     _debounceTimer?.cancel();
-
-    // Only check distance if significant move
-    if (distance > 100) {
-      // Increased to 100m
-      _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
-        _currentCenter = center;
-        _fetchAddressForLocation(center);
-      });
-    }
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+      _currentCenter = center;
+      _fetchAddressForLocation(center);
+    });
   }
 
-  Future<void> _moveToCurrentLocation() async {
+  Future<void> _getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showLocationServiceDialog();
+        // Only show dialog if user explicitly requested (not on init)
+        // But here we might want to just return if it's init
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _showPermissionDeniedSnackbar();
-          return;
-        }
+        if (permission == LocationPermission.denied) return;
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        _showPermissionDeniedSnackbar();
-        return;
-      }
+      if (permission == LocationPermission.deniedForever) return;
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -209,47 +288,12 @@ class _SelectCurrentLocationScreenState
       _fetchAddressForLocation(newLocation);
     } catch (e) {
       debugPrint('Error getting current location: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to get current location'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
     }
-  }
-
-  void _showLocationServiceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Location Services Disabled'),
-        content: const Text(
-          'Please enable location services to use this feature.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPermissionDeniedSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location permission is required'),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   void _confirmLocation() {
     if (_selectedFeature != null) {
-      // Return the selected feature with updated coordinates
+      // Update coordinates to the exact center pin location
       final updatedFeature = Feature(
         type: _selectedFeature!.type,
         properties: _selectedFeature!.properties,
@@ -259,6 +303,19 @@ class _SelectCurrentLocationScreenState
         ),
       );
       Navigator.pop(context, updatedFeature);
+    } else {
+      // Create a basic feature if none selected (e.g. just dragged there)
+      final feature = Feature(
+        type: 'Feature',
+        properties: Properties(
+          name: _locationName,
+        ),
+        geometry: Geometry(
+          type: 'Point',
+          coordinates: [_currentCenter.longitude, _currentCenter.latitude],
+        ),
+      );
+      Navigator.pop(context, feature);
     }
   }
 
@@ -267,15 +324,30 @@ class _SelectCurrentLocationScreenState
     return Scaffold(
       body: Stack(
         children: [
+          // MAP
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentCenter,
-              initialZoom: widget.preselectedLocation != null ? 15 : 12,
+              initialZoom: 15, // Closer zoom like volunteer app
               onPositionChanged: (position, hasGesture) {
                 if (hasGesture) {
                   _onMapMoved();
+                  // Dismiss search if moving map
+                  if (_showSearchResults) {
+                    setState(() {
+                      _showSearchResults = false;
+                    });
+                    _searchFocusNode.unfocus();
+                  }
                 }
+              },
+              onTap: (_, __) {
+                // Dismiss search
+                setState(() {
+                  _showSearchResults = false;
+                });
+                _searchFocusNode.unfocus();
               },
             ),
             children: [
@@ -285,243 +357,378 @@ class _SelectCurrentLocationScreenState
               ),
             ],
           ),
-          // Center marker (fixed position)
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: 48,
-                  color: Colors.red,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 4,
-                      color: Colors.black.withOpacity(0.3),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 48), // Offset to center the pin tip
-              ],
-            ),
-          ),
-          // Top bar with back button and search
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search location...',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          suffixIcon: const Icon(
-                            Icons.search,
-                            color: Colors.blue,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                        readOnly: true,
-                        onTap: () async {
-                          // Navigate to search screen
-                          final result = await Navigator.push<Feature>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const SelectLocationScreen(),
-                            ),
-                          );
 
-                          if (result != null && mounted) {
-                            // User selected a location from search
-                            final coords = result.geometry?.coordinates;
-                            if (coords != null && coords.length >= 2) {
-                              final newLocation = LatLng(coords[1], coords[0]);
-                              _mapController.move(newLocation, 15);
-                              _currentCenter = newLocation;
-                              _selectedFeature = result;
-                              _updateLocationDetails(result);
-                            }
-                          }
-                        },
-                      ),
-                    ),
+          // Center Pin (Fixed)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                bottom: 40,
+              ), // Adjust for pin height
+              child: Icon(
+                Icons.location_on,
+                size: 50,
+                color: Theme.of(context).primaryColor, // Match theme
+                shadows: [
+                  Shadow(
+                    blurRadius: 10,
+                    color: Colors.black.withOpacity(0.2),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
             ),
           ),
-          // Bottom section with current location button and address card
-          Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Current location button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Center(
-                  child: SizedBox(
-                    height: 44,
-                    child: ElevatedButton.icon(
-                      onPressed: _moveToCurrentLocation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue,
-                        elevation: 4,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
+
+          // FLOATING SEARCH BAR (Like Volunteer App)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            right: 16,
+            child: Column(
+              children: [
+                // Search Input Field
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        color: Colors.grey[700],
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          decoration: InputDecoration(
+                            hintText: 'Search for a location...',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 16,
+                            ),
+                          ),
+                          onTap: () {
+                            if (_searchResults.isNotEmpty) {
+                              setState(() {
+                                _showSearchResults = true;
+                              });
+                            }
+                          },
                         ),
                       ),
-                      icon: const Icon(Icons.gps_fixed, size: 20),
-                      label: const Text(
-                        'Current Location',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            color: Colors.grey[600],
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchResults = [];
+                              _showSearchResults = false;
+                            });
+                          },
+                        ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
+
+                // Search Results Dropdown
+                if (_showSearchResults)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    constraints: const BoxConstraints(maxHeight: 250),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: _isSearching
+                        ? const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                        : _searchResults.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: Text(
+                                'No locations found',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              itemCount: _searchResults.length,
+                              itemBuilder: (context, index) {
+                                final result = _searchResults[index];
+                                return _buildSearchResultItem(
+                                  result,
+                                  index == _searchResults.length - 1,
+                                );
+                              },
+                            ),
+                          ),
+                  ),
+              ],
+            ),
+          ),
+
+          // BOTTOM SECTION (My Location + Confirm)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Go to current location button
+                Padding(
+                  padding: const EdgeInsets.only(right: 16, bottom: 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: _getCurrentLocation,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Icon(
+                            Icons.my_location_rounded,
+                            color: Theme.of(context).primaryColor,
+                            size: 24,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // Address card
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+
+                // Location Details Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
-                  color: Colors.grey[50],
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on_outlined,
-                                color: Colors.blue,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _isLoadingAddress
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Text(
-                                        _locationName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                              ),
-                            ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.location_on,
+                              color: Color(0xFF1E88E5),
+                              size: 24,
+                            ),
                           ),
-                          subtitle: _locationAddress.isNotEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _isLoadingAddress
+                                      ? 'Locating...'
+                                      : _locationName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (_locationAddress.isNotEmpty)
+                                  Text(
                                     _locationAddress,
                                     style: TextStyle(
                                       color: Colors.grey[600],
-                                      fontSize: 14,
+                                      fontSize: 12,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                )
-                              : null,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            16.0,
-                            8.0,
-                            16.0,
-                            12.0,
-                          ),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoadingAddress
-                                  ? null
-                                  : _confirmLocation,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: Colors.grey[300],
-                                elevation: 2,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12.0,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Confirm',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _isLoadingAddress ? null : _confirmLocation,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF1E88E5),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
                         ),
-                      ],
-                    ),
+                        child: _isLoadingAddress
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Confirm Location',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                      ),
+                      // Add safe area padding for bottom
+                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _mapController.dispose();
+  Widget _buildSearchResultItem(Feature result, bool isLast) {
+    final name = result.properties?.name ?? '';
+    final parts = _formatAddress(result.properties).split(', ');
+    // remove name from parts if present
 
-    _debounceTimer?.cancel();
-    super.dispose();
+    final subtitle = parts.join(', ');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _selectSearchResult(result),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: isLast
+                ? null
+                : Border(
+                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                  ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.location_on_outlined,
+                  color: Colors.grey[600],
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.north_west_rounded,
+                color: Colors.grey,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reliefflow_frontend_public_app/screens/request_donation/models/added_items.dart';
+
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item_category.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_type_dropdown.dart';
@@ -128,7 +128,7 @@ class _ItemDonationRequestItemFormState
                   ),
                   elevation: 0,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   setState(() => error = null);
                   if (selectedItemCategory == null ||
                       description.isEmpty ||
@@ -136,14 +136,16 @@ class _ItemDonationRequestItemFormState
                     setState(() => error = 'Please fill all fields');
                     return;
                   }
-                  addedItems.add(
+                  FocusScope.of(context).unfocus();
+                  await Future.delayed(const Duration(milliseconds: 50));
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop(
                     ItemRequestItem(
                       category: selectedItemCategory!,
                       description: description,
                       quantity: qty,
                     ),
                   );
-                  Navigator.of(context).maybePop();
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

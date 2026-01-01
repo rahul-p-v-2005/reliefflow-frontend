@@ -9,7 +9,7 @@ import 'package:reliefflow_frontend_public_app/screens/request_donation/models/i
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/donation_card.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/compact_text_field.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/item_donation_request_item_form.dart';
-import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_location.dart';
+import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 
 class ItemsDonationForm extends StatelessWidget {
   const ItemsDonationForm({super.key});
@@ -23,8 +23,36 @@ class ItemsDonationForm extends StatelessWidget {
   }
 }
 
-class _ItemsDonationFormBody extends StatelessWidget {
+class _ItemsDonationFormBody extends StatefulWidget {
   const _ItemsDonationFormBody();
+
+  @override
+  State<_ItemsDonationFormBody> createState() => _ItemsDonationFormBodyState();
+}
+
+class _ItemsDonationFormBodyState extends State<_ItemsDonationFormBody> {
+  late FocusNode _titleFocus;
+  late FocusNode _descriptionFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleFocus = FocusNode();
+    _descriptionFocus = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _titleFocus.dispose();
+    _descriptionFocus.dispose();
+    super.dispose();
+  }
+
+  void _unfocusAll() {
+    _titleFocus.unfocus();
+    _descriptionFocus.unfocus();
+    FocusScope.of(context).unfocus();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +65,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         } else if (state.status == DonationSubmitStatus.error &&
             state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -65,6 +93,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
                     label: 'Title',
                     hint: 'e.g., Need supplies for flood relief',
                     value: state.title,
+                    focusNode: _titleFocus,
                     onChanged: cubit.updateTitle,
                   ),
                   SizedBox(height: 12),
@@ -72,6 +101,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
                     label: 'Description',
                     hint: 'Explain what items you need and why...',
                     value: state.description,
+                    focusNode: _descriptionFocus,
                     maxLines: 3,
                     onChanged: cubit.updateDescription,
                   ),
@@ -89,7 +119,10 @@ class _ItemsDonationFormBody extends StatelessWidget {
                 children: [
                   _ItemsList(items: state.items, onRemove: cubit.removeItem),
                   SizedBox(height: 10),
-                  _AddItemButton(onAdd: cubit.addItem),
+                  _AddItemButton(
+                    onAdd: cubit.addItem,
+                    onTapCallback: _unfocusAll,
+                  ),
                 ],
               ),
             ),
@@ -103,6 +136,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
               child: _LocationPicker(
                 location: state.location,
                 onSelect: cubit.setLocation,
+                onTapCallback: _unfocusAll,
               ),
             ),
             SizedBox(height: 12),
@@ -116,6 +150,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
                 images: state.images,
                 onPick: cubit.pickImages,
                 onRemove: cubit.removeImage,
+                onTapCallback: _unfocusAll,
               ),
             ),
             SizedBox(height: 12),
@@ -128,6 +163,7 @@ class _ItemsDonationFormBody extends StatelessWidget {
               child: _DeadlinePicker(
                 deadline: state.deadline,
                 onSelect: cubit.setDeadline,
+                onTapCallback: _unfocusAll,
               ),
             ),
             SizedBox(height: 24),
@@ -241,14 +277,17 @@ class _ItemsList extends StatelessWidget {
 
 class _AddItemButton extends StatelessWidget {
   final Function(ItemRequestItem) onAdd;
+  final VoidCallback onTapCallback;
 
-  const _AddItemButton({required this.onAdd});
+  const _AddItemButton({required this.onAdd, required this.onTapCallback});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        showModalBottomSheet(
+      onTap: () async {
+        onTapCallback();
+        await Future.delayed(const Duration(milliseconds: 50));
+        final newItem = await showModalBottomSheet<ItemRequestItem>(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
@@ -261,6 +300,10 @@ class _AddItemButton extends StatelessWidget {
             child: ItemDonationRequestItemForm(),
           ),
         );
+
+        if (newItem != null) {
+          onAdd(newItem);
+        }
       },
       borderRadius: BorderRadius.circular(10),
       child: Container(
@@ -292,8 +335,13 @@ class _AddItemButton extends StatelessWidget {
 class _LocationPicker extends StatelessWidget {
   final Feature? location;
   final Function(Feature?) onSelect;
+  final VoidCallback onTapCallback;
 
-  const _LocationPicker({required this.location, required this.onSelect});
+  const _LocationPicker({
+    required this.location,
+    required this.onSelect,
+    required this.onTapCallback,
+  });
 
   String _formatAddress(Properties? props) {
     if (props == null) return '';
@@ -310,9 +358,13 @@ class _LocationPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () async {
+        onTapCallback();
+        await Future.delayed(const Duration(milliseconds: 50));
         final result = await Navigator.push<Feature>(
           context,
-          MaterialPageRoute(builder: (_) => const SelectLocationScreen()),
+          MaterialPageRoute(
+            builder: (_) => const SelectCurrentLocationScreen(),
+          ),
         );
         if (result != null) onSelect(result);
       },
@@ -370,11 +422,13 @@ class _ImagePicker extends StatelessWidget {
   final List<File> images;
   final VoidCallback onPick;
   final Function(int) onRemove;
+  final VoidCallback onTapCallback;
 
   const _ImagePicker({
     required this.images,
     required this.onPick,
     required this.onRemove,
+    required this.onTapCallback,
   });
 
   @override
@@ -427,7 +481,11 @@ class _ImagePicker extends StatelessWidget {
           SizedBox(height: 8),
         ],
         InkWell(
-          onTap: onPick,
+          onTap: () async {
+            onTapCallback();
+            await Future.delayed(const Duration(milliseconds: 50));
+            onPick();
+          },
           borderRadius: BorderRadius.circular(10),
           child: Container(
             padding: EdgeInsets.all(14),
@@ -465,13 +523,20 @@ class _ImagePicker extends StatelessWidget {
 class _DeadlinePicker extends StatelessWidget {
   final DateTime? deadline;
   final Function(DateTime?) onSelect;
+  final VoidCallback onTapCallback;
 
-  const _DeadlinePicker({required this.deadline, required this.onSelect});
+  const _DeadlinePicker({
+    required this.deadline,
+    required this.onSelect,
+    required this.onTapCallback,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () async {
+        onTapCallback();
+        await Future.delayed(const Duration(milliseconds: 50));
         final date = await showDatePicker(
           context: context,
           initialDate: DateTime.now().add(Duration(days: 7)),

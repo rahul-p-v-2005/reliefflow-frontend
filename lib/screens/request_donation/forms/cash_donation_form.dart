@@ -32,7 +32,7 @@ class _CashDonationFormBody extends StatelessWidget {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         } else if (state.status == DonationSubmitStatus.error &&
             state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(

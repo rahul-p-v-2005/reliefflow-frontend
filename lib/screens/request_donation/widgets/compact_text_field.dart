@@ -20,7 +20,10 @@ class CompactTextField extends StatelessWidget {
     this.keyboardType,
     this.prefixIcon,
     this.validator,
+    this.focusNode,
   });
+
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +43,7 @@ class CompactTextField extends StatelessWidget {
           initialValue: value,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          focusNode: focusNode,
           onChanged: onChanged,
           validator: validator,
           style: TextStyle(fontSize: 14),
