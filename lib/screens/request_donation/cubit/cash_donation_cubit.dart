@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
@@ -81,25 +82,56 @@ class CashDonationCubit extends Cubit<CashDonationState> {
       log('URL: $url');
       log('Token: ${token?.substring(0, 20)}...');
 
-      final requestBody = {
-        'title': state.title,
-        'description': state.description,
-        'donationType': 'cash',
-        'amount': double.parse(state.amount),
-        'upiNumber': state.upiId,
-        'deadline': state.deadline?.toIso8601String(),
-        'proofImages': [],
-      };
-      log('Request Body: $requestBody');
-
-      final response = await http.post(
+      final request = http.MultipartRequest(
+        'POST',
         Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(requestBody),
       );
+
+      // Add headers
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add text fields
+      request.fields['title'] = state.title;
+      request.fields['description'] = state.description;
+      request.fields['donationType'] = 'cash';
+      request.fields['amount'] = state.amount;
+      request.fields['upiNumber'] = state.upiId;
+      if (state.deadline != null) {
+        request.fields['deadline'] = state.deadline!.toIso8601String();
+      }
+
+      // Add images
+      for (final imageFile in state.images) {
+        // Determine mime type (fallback to jpeg)
+        final extension = imageFile.path.split('.').last.toLowerCase();
+        String mimeType;
+        switch (extension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'image/jpeg';
+            break;
+          case 'png':
+            mimeType = 'image/png';
+            break;
+          case 'webp':
+            mimeType = 'image/webp';
+            break;
+          default:
+            mimeType = 'image/jpeg';
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'proofImages',
+            imageFile.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      log('Sending Multipart Request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       log('Response Status: ${response.statusCode}');
       log('Response Headers: ${response.headers}');

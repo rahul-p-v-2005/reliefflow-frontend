@@ -11,10 +11,10 @@ class RequestListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Uses shared RequestsListCubit from MainNavigation
-    // Refresh data when this screen is shown
-    context.read<RequestsListCubit>().loadRequests();
-    return const _RequestListScreenBody();
+    return BlocProvider(
+      create: (context) => RequestsListCubit()..loadRequests(),
+      child: const _RequestListScreenBody(),
+    );
   }
 }
 
@@ -1615,6 +1615,28 @@ class DonationRequestBottomSheet extends StatelessWidget {
     }
   }
 
+  String _getImageUrl(String url) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return url;
+    }
+
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
+    if (url.startsWith('/')) {
+      return '$origin$url';
+    }
+    return '$origin/$url';
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _FullScreenImageView(imageUrl: imageUrl),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(request.status);
@@ -1705,6 +1727,72 @@ class DonationRequestBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+
+          // Photo Evidence Section
+          if (request.proofImages != null &&
+              request.proofImages!.isNotEmpty) ...[
+            const Text(
+              'Photo Evidence',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: request.proofImages!.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final imageUrl = _getImageUrl(request.proofImages![index]);
+                  return GestureDetector(
+                    onTap: () => _showFullScreenImage(context, imageUrl),
+                    child: Container(
+                      width: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.2),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Description (if available)
           if (request.description != null &&
@@ -1864,22 +1952,36 @@ class DonationRequestBottomSheet extends StatelessWidget {
           ],
           const SizedBox(height: 20),
 
-          // Location & Date Row
+          // Location Row (Full Width)
+          if (!isCash || (request.address?.addressLine1 != null)) ...[
+            SizedBox(
+              width: double.infinity,
+              child: _InfoCard(
+                label: 'Location',
+                value: request.address?.addressLine1 ?? 'Not specified',
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Dates Row
           Row(
             children: [
-              Expanded(
-                child: _InfoCard(
-                  label: 'Location',
-                  value: request.address?.addressLine1 ?? 'Not specified',
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: _InfoCard(
                   label: 'Requested Date',
                   value: request.createdAt != null
                       ? DateFormat('MMM dd, yyyy').format(request.createdAt!)
-                      : 'N/A',
+                      : 'Not specified',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoCard(
+                  label: 'Deadline',
+                  value: request.deadline != null
+                      ? DateFormat('MMM dd, yyyy').format(request.deadline!)
+                      : 'Not specified',
                 ),
               ),
             ],
@@ -1946,6 +2048,8 @@ class _InfoCard extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(color: Colors.grey, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
@@ -1988,6 +2092,20 @@ class DonationRequestTrackingScreen extends StatelessWidget {
     }
   }
 
+  String _getImageUrl(String url) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return url;
+    }
+
+    final uri = Uri.parse(kBaseUrl);
+    final origin = '${uri.scheme}://${uri.host}:${uri.port}';
+
+    if (url.startsWith('/')) {
+      return '$origin$url';
+    }
+    return '$origin/$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeColor = isCash
@@ -2008,10 +2126,10 @@ class DonationRequestTrackingScreen extends StatelessWidget {
           children: [
             // Request Details Card
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.white,
@@ -2022,8 +2140,8 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             color: themeColor.withOpacity(0.1),
@@ -2033,9 +2151,10 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                                 ? Icons.currency_rupee
                                 : Icons.inventory_2_outlined,
                             color: themeColor,
+                            size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2047,14 +2166,14 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                                         : 'Item Donation'),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                 ),
                               ),
                               Text(
                                 'ID: ${request.id}',
                                 style: TextStyle(
                                   color: Colors.grey[600],
-                                  fontSize: 12,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
@@ -2062,9 +2181,9 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(),
                     const SizedBox(height: 8),
+                    const Divider(),
+                    const SizedBox(height: 4),
                     _DetailRow(
                       'Type',
                       isCash ? 'Cash Donation' : 'Item Donation',
@@ -2083,9 +2202,16 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                             ).format(request.createdAt!)
                           : 'N/A',
                     ),
+                    _DetailRow(
+                      'Deadline',
+                      request.deadline != null
+                          ? DateFormat('MMM dd, yyyy').format(request.deadline!)
+                          : 'Not specified',
+                    ),
                     _DetailRow('Current Status', request.status.toUpperCase()),
-                    if (request.address != null) ...[
-                      const SizedBox(height: 4),
+                    if (request.address != null &&
+                        request.address?.addressLine1 != null) ...[
+                      const SizedBox(height: 2),
                       _DetailRow('Location', request.address!.addressLine1),
                     ],
                   ],
@@ -2093,13 +2219,119 @@ class DonationRequestTrackingScreen extends StatelessWidget {
               ),
             ),
 
+            // Photo Evidence Card (if available)
+            if (request.proofImages != null && request.proofImages!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.photo_library_outlined,
+                            size: 16,
+                            color: themeColor,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Photo Evidence',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 120, // Reduced from 200
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: request.proofImages!.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final imageUrl = _getImageUrl(
+                              request.proofImages![index],
+                            );
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => _FullScreenImageView(
+                                      imageUrl: imageUrl,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  imageUrl,
+                                  height: 120,
+                                  width: request.proofImages!.length > 1
+                                      ? 160
+                                      : 200,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          height: 120,
+                                          width: 120,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 120,
+                                      width: 120,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 32,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Description Card (if available)
             if (request.description != null && request.description!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.white,
@@ -2111,7 +2343,7 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.description_outlined,
-                            size: 18,
+                            size: 16,
                             color: themeColor,
                           ),
                           const SizedBox(width: 8),
@@ -2119,16 +2351,16 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                             'Description',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         request.description!,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.grey[700],
                         ),
                       ),
@@ -2142,10 +2374,13 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                 request.itemDetails != null &&
                 request.itemDetails!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.white,
@@ -2157,7 +2392,7 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.inventory_2_outlined,
-                            size: 18,
+                            size: 16,
                             color: themeColor,
                           ),
                           const SizedBox(width: 8),
@@ -2165,52 +2400,71 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                             'Items Requested',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      // Compact list of items
                       ...request.itemDetails!.map(
                         (item) => Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: themeColor.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFFF8F9FA),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: themeColor.withOpacity(0.2),
+                              color: Colors.grey.withOpacity(0.1),
                             ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: themeColor.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle_outline,
+                                      size: 12,
+                                      color: themeColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       item.category,
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
                                       ),
                                     ),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
+                                      horizontal: 8,
+                                      vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: themeColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: themeColor.withOpacity(0.3),
+                                      ),
                                     ),
                                     child: Text(
                                       'Qty: ${item.quantity}',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                         color: themeColor,
                                       ),
@@ -2220,12 +2474,16 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                               ),
                               if (item.description != null &&
                                   item.description!.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  item.description!,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[600],
+                                const SizedBox(height: 4),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 26),
+                                  child: Text(
+                                    item.description!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                      height: 1.2,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -2240,10 +2498,10 @@ class DonationRequestTrackingScreen extends StatelessWidget {
 
             // Status Timeline
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.white,
@@ -2255,10 +2513,10 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                       'Request Timeline',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     if (isRejected)
                       _TimelineItem(
                         step: 1,
@@ -2323,7 +2581,7 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2), // Reduced from 4
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

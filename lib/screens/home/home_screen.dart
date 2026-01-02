@@ -1462,7 +1462,7 @@ class _AidRequestBottomSheet extends StatelessWidget {
 
           // Location
           const Text(
-            'Location',
+            'Address',
             style: TextStyle(
               color: Colors.grey,
               fontSize: 12,
@@ -1796,7 +1796,7 @@ class _AidRequestTrackingScreen extends StatelessWidget {
                     ),
                     _buildDetailRow('Status', request.status.toUpperCase()),
                     if (request.address.isNotEmpty)
-                      _buildDetailRow('Location', request.address),
+                      _buildDetailRow('Address', request.address),
                   ],
                 ),
               ),

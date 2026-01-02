@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item.dart';
@@ -104,34 +105,87 @@ class ItemsDonationCubit extends Cubit<ItemsDonationState> {
           )
           .toList();
 
-      final Map<String, dynamic> body = {
-        'title': state.title,
-        'description': state.description,
-        'donationType': 'item',
-        'itemDetails': itemDetails,
-        'deadline': state.deadline?.toIso8601String(),
-        'proofImages': [],
-      };
+      // Create MultipartRequest
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$kBaseUrl/public/donation/request/add'),
+      );
+
+      // Add headers
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add text fields
+      request.fields['title'] = state.title;
+      request.fields['description'] = state.description;
+      request.fields['donationType'] = 'item';
+      if (state.deadline != null) {
+        request.fields['deadline'] = state.deadline!.toIso8601String();
+      }
+
+      // Add complex objects as JSON strings
+      request.fields['itemDetails'] = json.encode(itemDetails);
 
       // Add location if selected
       if (state.location != null) {
         final coords = state.location!.geometry?.coordinates;
         if (coords != null && coords.length >= 2) {
-          body['location'] = {
+          final locationData = {
             'type': 'Point',
             'coordinates': [coords[0], coords[1]],
           };
+          request.fields['location'] = json.encode(locationData);
+        }
+
+        // Add address details if available
+        if (state.location!.properties != null) {
+          final props = state.location!.properties!;
+          final addressData = {
+            'addressLine1': props.name,
+            'city': props.city ?? props.locality,
+            'state': props.state,
+            'pinCode': props.postcode,
+          };
+          // Filter out null values
+          addressData.removeWhere((key, value) => value == null);
+
+          if (addressData.isNotEmpty) {
+            request.fields['address'] = json.encode(addressData);
+          }
         }
       }
 
-      final response = await http.post(
-        Uri.parse('$kBaseUrl/public/donation/request/add'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(body),
-      );
+      // Add images
+      for (final imageFile in state.images) {
+        // Determine mime type (fallback to jpeg)
+        final extension = imageFile.path.split('.').last.toLowerCase();
+        String mimeType;
+        switch (extension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'image/jpeg';
+            break;
+          case 'png':
+            mimeType = 'image/png';
+            break;
+          case 'webp':
+            mimeType = 'image/webp';
+            break;
+          default:
+            mimeType = 'image/jpeg';
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'proofImages',
+            imageFile.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201) {
         emit(state.copyWith(status: DonationSubmitStatus.success));
