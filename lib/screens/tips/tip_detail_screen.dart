@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reliefflow_frontend_public_app/models/disaster_tip.dart';
+import 'package:reliefflow_frontend_public_app/screens/quiz/quiz_intro_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
@@ -369,6 +370,22 @@ class _TipDetailScreenState extends State<TipDetailScreen>
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QuizIntroScreen(
+                tipSlug: widget.tipSlug,
+                tipTitle: tipDetail!.title,
+              ),
+            ),
+          );
+        },
+        label: Text('Take Quiz'),
+        icon: Icon(Icons.quiz),
+        backgroundColor: color,
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LargeReliefCentersMap extends StatefulWidget {
   const LargeReliefCentersMap({super.key});
@@ -10,29 +9,36 @@ class LargeReliefCentersMap extends StatefulWidget {
 }
 
 class _LargeReliefCentersMapState extends State<LargeReliefCentersMap> {
+  GoogleMapController? _mapController;
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Relief Centers"),
+        title: const Text("Relief Centers"),
       ),
-      body: Container(
-        // borderRadius: BorderRadiusGeometry.circular(24),
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: LatLng(
-              11.917,
-              75.335,
-            ), // Center the map over London
-            initialZoom: 9.2,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate:
-                  'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
-            ),
-          ],
+      body: GoogleMap(
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(11.917, 75.335), // Kerala region
+          zoom: 9.2,
         ),
+        mapType: MapType
+            .normal, // Changed from satellite - much lighter on resources
+        onMapCreated: (GoogleMapController controller) {
+          _mapController = controller;
+        },
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        zoomControlsEnabled: true,
+        mapToolbarEnabled: false,
+        buildingsEnabled: false, // Reduces rendering load
+        trafficEnabled: false,
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/large_relief_centers_map.dart';
 
 class ReliefCentersMap extends StatelessWidget {
@@ -15,23 +14,19 @@ class ReliefCentersMap extends StatelessWidget {
           children: [
             SizedBox(
               height: 100,
-              child: FlutterMap(
-                options: MapOptions(
-                  interactionOptions: InteractionOptions(
-                    flags: InteractiveFlag.none,
-                  ),
-                  initialCenter: LatLng(
-                    51.509364,
-                    -0.128928,
-                  ), // Center the map over London
-                  initialZoom: 9.2,
+              child: GoogleMap(
+                initialCameraPosition: const CameraPosition(
+                  target: LatLng(11.917, 75.335), // Kerala region
+                  zoom: 9.2,
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=keaTXGBOhHJFBdz4XJri',
-                  ),
-                ],
+                mapType: MapType.normal, // Lighter weight than satellite
+                zoomControlsEnabled: false,
+                scrollGesturesEnabled: false,
+                rotateGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+                zoomGesturesEnabled: false,
+                myLocationButtonEnabled: false,
+                mapToolbarEnabled: false,
               ),
             ),
             Center(

@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/geometry.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
@@ -27,8 +26,8 @@ class SelectCurrentLocationScreen extends StatefulWidget {
 
 class _SelectCurrentLocationScreenState
     extends State<SelectCurrentLocationScreen> {
-  late MapController _mapController;
-  LatLng _currentCenter = LatLng(
+  GoogleMapController? _mapController;
+  LatLng _currentCenter = const LatLng(
     11.917,
     75.335,
   ); // Default to Kannur/Kerala area
@@ -49,7 +48,6 @@ class _SelectCurrentLocationScreenState
   @override
   void initState() {
     super.initState();
-    _mapController = MapController();
     _searchController.addListener(_onSearchChanged);
 
     // If coming from search screen with preselected location
@@ -73,7 +71,7 @@ class _SelectCurrentLocationScreenState
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _mapController?.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _debounceTimer?.cancel();
@@ -155,7 +153,11 @@ class _SelectCurrentLocationScreenState
         _updateLocationDetails(feature);
       });
 
-      _mapController.move(newLocation, 15);
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: newLocation, zoom: 15),
+        ),
+      );
       _searchFocusNode.unfocus();
     }
   }
@@ -251,14 +253,23 @@ class _SelectCurrentLocationScreenState
     }
   }
 
-  void _onMapMoved() {
-    final center = _mapController.camera.center;
-    // Debounce address fetching
+  void _onCameraIdle() {
+    // Debounce address fetching after camera stops moving
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
-      _currentCenter = center;
-      _fetchAddressForLocation(center);
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchAddressForLocation(_currentCenter);
     });
+  }
+
+  void _onCameraMove(CameraPosition position) {
+    _currentCenter = position.target;
+    // Dismiss search if moving map
+    if (_showSearchResults) {
+      setState(() {
+        _showSearchResults = false;
+      });
+      _searchFocusNode.unfocus();
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -283,7 +294,11 @@ class _SelectCurrentLocationScreenState
       );
 
       final newLocation = LatLng(position.latitude, position.longitude);
-      _mapController.move(newLocation, 15);
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: newLocation, zoom: 15),
+        ),
+      );
       _currentCenter = newLocation;
       _fetchAddressForLocation(newLocation);
     } catch (e) {
@@ -325,37 +340,27 @@ class _SelectCurrentLocationScreenState
       body: Stack(
         children: [
           // MAP
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _currentCenter,
-              initialZoom: 15, // Closer zoom like volunteer app
-              onPositionChanged: (position, hasGesture) {
-                if (hasGesture) {
-                  _onMapMoved();
-                  // Dismiss search if moving map
-                  if (_showSearchResults) {
-                    setState(() {
-                      _showSearchResults = false;
-                    });
-                    _searchFocusNode.unfocus();
-                  }
-                }
-              },
-              onTap: (_, __) {
-                // Dismiss search
-                setState(() {
-                  _showSearchResults = false;
-                });
-                _searchFocusNode.unfocus();
-              },
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: _currentCenter,
+              zoom: 15, // Closer zoom like volunteer app
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.reliefflow.app',
-              ),
-            ],
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+            },
+            onCameraMove: _onCameraMove,
+            onCameraIdle: _onCameraIdle,
+            onTap: (_) {
+              // Dismiss search
+              setState(() {
+                _showSearchResults = false;
+              });
+              _searchFocusNode.unfocus();
+            },
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
           ),
 
           // Center Pin (Fixed)
@@ -583,7 +588,7 @@ class _SelectCurrentLocationScreenState
                               ).primaryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.location_on,
                               color: Color(0xFF1E88E5),
                               size: 24,
@@ -624,7 +629,7 @@ class _SelectCurrentLocationScreenState
                       ElevatedButton(
                         onPressed: _isLoadingAddress ? null : _confirmLocation,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1E88E5),
+                          backgroundColor: const Color(0xFF1E88E5),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),

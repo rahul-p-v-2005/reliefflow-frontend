@@ -38,8 +38,7 @@ dependencies:
   weather: ^3.2.1
   intl: ^0.20.2
   # icon_forest: ^1.1.8
-  flutter_map: ^8.2.2
-  latlong2: ^0.9.1
+  google_maps_flutter: ^2.14.0
   url_launcher: ^6.3.2
   # bottom_sheet: ^4.0.4
   google_fonts: ^6.3.2
@@ -54,7 +53,6 @@ dependencies:
   geocoding: ^4.0.0
 
   glassmorphism: any
-  icon_forest: any
 
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
