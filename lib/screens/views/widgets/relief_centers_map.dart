@@ -14,12 +14,13 @@ class ReliefCentersMap extends StatelessWidget {
           children: [
             SizedBox(
               height: 100,
+              width: double.infinity,
               child: GoogleMap(
                 initialCameraPosition: const CameraPosition(
                   target: LatLng(11.917, 75.335), // Kerala region
                   zoom: 9.2,
                 ),
-                mapType: MapType.normal, // Lighter weight than satellite
+                mapType: MapType.normal,
                 zoomControlsEnabled: false,
                 scrollGesturesEnabled: false,
                 rotateGesturesEnabled: false,

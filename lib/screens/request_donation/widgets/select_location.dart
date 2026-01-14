@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
-import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 
@@ -115,14 +114,19 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
     }
   }
 
+  // Google Maps API Key
+  static const String _googleApiKey = 'AIzaSyA-iVr1hsRG4GSLpWksqxlmUAOsR-IRsdw';
+
   Uri getSearchUrl(String query) {
-    final encodedQuery = Uri.encodeComponent(query);
-    // Add user location to bias results if available
-    String url = 'https://photon.komoot.io/api/?q=$query&limit=20';
+    // Use Google Places Autocomplete API
+    String url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+        '?input=${Uri.encodeComponent(query)}'
+        '&key=$_googleApiKey';
 
     if (_currentPosition != null) {
       url +=
-          '&lat=${_currentPosition!.latitude}&lon=${_currentPosition!.longitude}';
+          '&location=${_currentPosition!.latitude},${_currentPosition!.longitude}&radius=50000';
     }
 
     return Uri.parse(url);
@@ -275,13 +279,38 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
       final res = await http.get(getSearchUrl(query));
 
       if (res.statusCode == 200) {
-        final response = LocationSearchResponse.fromJson(jsonDecode(res.body));
-        final features = response.features ?? [];
+        final data = jsonDecode(res.body);
 
-        setState(() {
-          _filteredLocations = _deduplicateLocations(features);
-          _isSearching = false;
-        });
+        if (data['status'] == 'OK') {
+          final predictions = data['predictions'] as List<dynamic>;
+          final features = predictions
+              .map(
+                (p) => Feature(
+                  type: 'Feature',
+                  properties: Properties(
+                    name:
+                        p['structured_formatting']?['main_text'] ??
+                        p['description']?.toString().split(',').first ??
+                        'Unknown',
+                    osmType: p['place_id'],
+                    locality: p['structured_formatting']?['secondary_text'],
+                  ),
+                  geometry: null,
+                ),
+              )
+              .toList();
+
+          setState(() {
+            _filteredLocations = features;
+            _isSearching = false;
+          });
+        } else {
+          debugPrint('Places API error: ${data['status']}');
+          setState(() {
+            _filteredLocations = [];
+            _isSearching = false;
+          });
+        }
       } else {
         throw Exception('Failed to search locations');
       }
