@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/geometry.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 
 class SelectCurrentLocationScreen extends StatefulWidget {
@@ -92,11 +93,10 @@ class _SelectCurrentLocationScreenState
     });
   }
 
-  // Google Maps API Key - same as AndroidManifest.xml
-  static const String _googleApiKey = 'AIzaSyA-iVr1hsRG4GSLpWksqxlmUAOsR-IRsdw';
-
   Future<void> _searchLocations(String query) async {
     if (query.isEmpty) return;
+
+    log('_searchLocations called with query: $query');
 
     setState(() {
       _isSearching = true;
@@ -104,56 +104,34 @@ class _SelectCurrentLocationScreenState
     });
 
     try {
-      // Use Google Places Autocomplete API
-      final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-        '?input=${Uri.encodeComponent(query)}'
-        '&key=$_googleApiKey'
-        '&location=${_currentCenter.latitude},${_currentCenter.longitude}'
-        '&radius=50000',
+      // Use Photon API for search (free, no API key required)
+      String url =
+          'https://photon.komoot.io/api/?q=${Uri.encodeComponent(query)}&limit=5';
+
+      // Bias towards current center
+      url += '&lat=${_currentCenter.latitude}&lon=${_currentCenter.longitude}';
+
+      log('Photon API URL: $url');
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'ReliefflowApp/1.0'},
+      );
+      log('Photon API status: ${response.statusCode}');
+      log(
+        'Photon API response: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
       );
 
-      log('Places API request: $url');
-      final response = await http.get(url);
-      log('Places API status: ${response.statusCode}');
-      log('Places API response: ${response.body}');
-
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'OK') {
-          final predictions = data['predictions'] as List<dynamic>;
-          if (mounted) {
-            setState(() {
-              _searchResults = predictions
-                  .map(
-                    (p) => Feature(
-                      type: 'Feature',
-                      properties: Properties(
-                        name:
-                            p['structured_formatting']?['main_text'] ??
-                            p['description']?.toString().split(',').first ??
-                            'Unknown',
-                        osmType:
-                            p['place_id'], // Store place_id for coordinates lookup
-                        locality: p['structured_formatting']?['secondary_text'],
-                      ),
-                      geometry: null,
-                    ),
-                  )
-                  .toList();
-              _isSearching = false;
-            });
-          }
-        } else {
-          log('Places API error: ${data['status']} - ${data['error_message']}');
-          if (mounted) {
-            setState(() {
-              _searchResults = [];
-              _isSearching = false;
-            });
-          }
+        final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
+        log('Parsed features count: ${data.features?.length ?? 0}');
+        if (mounted) {
+          setState(() {
+            _searchResults = data.features ?? [];
+            _isSearching = false;
+          });
         }
       } else {
+        log('Photon API failed with status: ${response.statusCode}');
         if (mounted) {
           setState(() {
             _searchResults = [];
@@ -161,8 +139,9 @@ class _SelectCurrentLocationScreenState
           });
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       log('Search error: $e');
+      log('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _searchResults = [];
@@ -172,92 +151,27 @@ class _SelectCurrentLocationScreenState
     }
   }
 
-  Future<void> _selectSearchResult(Feature feature) async {
-    final placeId = feature.properties?.osmType;
+  void _selectSearchResult(Feature feature) {
+    final coords = feature.geometry?.coordinates;
+    if (coords != null && coords.length >= 2) {
+      final lat = coords[1];
+      final lng = coords[0];
+      final newLocation = LatLng(lat, lng);
 
-    if (placeId != null) {
       setState(() {
+        _currentCenter = newLocation;
         _showSearchResults = false;
-        _isLoadingAddress = true;
         _searchController.text = feature.properties?.name ?? '';
-      });
-      _searchFocusNode.unfocus();
-
-      try {
-        // Fetch coordinates using Google Place Details API
-        final url = Uri.parse(
-          'https://maps.googleapis.com/maps/api/place/details/json'
-          '?place_id=$placeId'
-          '&fields=geometry,name,formatted_address,address_components'
-          '&key=$_googleApiKey',
-        );
-
-        log('Place Details request: $url');
-        final response = await http.get(url);
-        log('Place Details response: ${response.body}');
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['status'] == 'OK') {
-            final result = data['result'];
-            final location = result['geometry']?['location'];
-
-            if (location != null) {
-              final lat = (location['lat'] as num).toDouble();
-              final lng = (location['lng'] as num).toDouble();
-              final newLocation = LatLng(lat, lng);
-
-              final updatedFeature = Feature(
-                type: 'Feature',
-                properties: Properties(
-                  name: result['name'] ?? feature.properties?.name,
-                  locality: result['formatted_address'],
-                ),
-                geometry: Geometry(type: 'Point', coordinates: [lng, lat]),
-              );
-
-              if (mounted) {
-                setState(() {
-                  _currentCenter = newLocation;
-                  _selectedFeature = updatedFeature;
-                  _isLoadingAddress = false;
-                });
-                _updateLocationDetails(updatedFeature);
-                _mapController?.animateCamera(
-                  CameraUpdate.newCameraPosition(
-                    CameraPosition(target: newLocation, zoom: 15),
-                  ),
-                );
-              }
-            }
-          } else {
-            log('Place Details error: ${data['status']}');
-            if (mounted) setState(() => _isLoadingAddress = false);
-          }
-        }
-      } catch (e) {
-        log('Place Details error: $e');
-        if (mounted) setState(() => _isLoadingAddress = false);
-      }
-    } else {
-      // Fallback for preselected locations with geometry
-      final coords = feature.geometry?.coordinates;
-      if (coords != null && coords.length >= 2) {
-        final newLocation = LatLng(coords[1], coords[0]);
-        setState(() {
-          _currentCenter = newLocation;
-          _showSearchResults = false;
-          _searchController.text = feature.properties?.name ?? '';
-          _selectedFeature = feature;
-        });
+        _selectedFeature = feature;
         _updateLocationDetails(feature);
-        _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: newLocation, zoom: 15),
-          ),
-        );
-        _searchFocusNode.unfocus();
-      }
+      });
+
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: newLocation, zoom: 15),
+        ),
+      );
+      _searchFocusNode.unfocus();
     }
   }
 
@@ -311,62 +225,24 @@ class _SelectCurrentLocationScreenState
     log('Fetching address for: ${location.latitude}, ${location.longitude}');
 
     try {
-      // Use Google Geocoding API for reverse geocoding
+      // Use Photon reverse geocoding (free, no API key required)
       final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json'
-        '?latlng=${location.latitude},${location.longitude}'
-        '&key=$_googleApiKey',
+        'https://photon.komoot.io/reverse?lon=${location.longitude}&lat=${location.latitude}',
       );
 
-      log('Geocoding request: $url');
-      final response = await http.get(url);
-      log('Geocoding response: ${response.body}');
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'ReliefflowApp/1.0'},
+      );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
 
-        if (data['status'] == 'OK' && (data['results'] as List).isNotEmpty) {
-          final result = data['results'][0];
-          final components = result['address_components'] as List<dynamic>;
-
-          String? name, city, state, country, locality;
-          for (final c in components) {
-            final types = (c['types'] as List).cast<String>();
-            if (types.contains('sublocality_level_1') ||
-                types.contains('neighborhood')) {
-              locality = c['long_name'];
-            } else if (types.contains('locality')) {
-              city = c['long_name'];
-            } else if (types.contains('administrative_area_level_1')) {
-              state = c['long_name'];
-            } else if (types.contains('country')) {
-              country = c['long_name'];
-            } else if (types.contains('premise') ||
-                types.contains('establishment')) {
-              name = c['long_name'];
-            }
-          }
-
-          name ??= locality ?? city ?? 'Unknown location';
-
-          final feature = Feature(
-            type: 'Feature',
-            properties: Properties(
-              name: name,
-              city: city,
-              state: state,
-              country: country,
-              locality: locality,
-            ),
-            geometry: Geometry(
-              type: 'Point',
-              coordinates: [location.longitude, location.latitude],
-            ),
-          );
+        if (data.features != null && data.features!.isNotEmpty) {
+          final feature = data.features!.first;
           _selectedFeature = feature;
           if (mounted) _updateLocationDetails(feature);
         } else {
-          log('Geocoding error: ${data['status']}');
           if (mounted) {
             setState(() {
               _locationName = 'Unknown location';
