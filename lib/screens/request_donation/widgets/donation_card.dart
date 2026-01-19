@@ -19,46 +19,35 @@ class DonationCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: iconColor, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
+          Row(
+            children: [
+              Icon(icon, color: iconColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF333333),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: EdgeInsets.all(12),
-            child: child,
-          ),
+          const SizedBox(height: 12),
+          child,
         ],
       ),
     );

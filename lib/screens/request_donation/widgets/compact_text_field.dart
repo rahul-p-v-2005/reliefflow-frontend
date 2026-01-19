@@ -9,6 +9,7 @@ class CompactTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final Function(String) onChanged;
   final String? Function(String?)? validator;
+  final FocusNode? focusNode;
 
   const CompactTextField({
     super.key,
@@ -23,22 +24,22 @@ class CompactTextField extends StatelessWidget {
     this.focusNode,
   });
 
-  final FocusNode? focusNode;
-
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-            fontSize: 12,
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              fontSize: 12,
+            ),
           ),
-        ),
-        SizedBox(height: 4),
+          const SizedBox(height: 8),
+        ],
         TextFormField(
           initialValue: value,
           maxLines: maxLines,
@@ -46,33 +47,37 @@ class CompactTextField extends StatelessWidget {
           focusNode: focusNode,
           onChanged: onChanged,
           validator: validator,
-          style: TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: Color(0xFF1E88E5), size: 18)
+                ? Icon(prefixIcon, color: const Color(0xFF1E88E5), size: 20)
                 : null,
-            prefixIconConstraints: BoxConstraints(minWidth: 36),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: Colors.grey[50], // Slightly lighter fill
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14, // Matches RequestAid
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Color(0xFF1E88E5), width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF1E88E5),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.red),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
             ),
           ),
         ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:reliefflow_frontend_public_app/screens/views/notificatio_page.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -55,11 +54,11 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                     size: 26,
                   ),
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const NotificationPage(),
-                      ),
-                    );
+                    // Navigator.of(context).push(
+                    //   MaterialPageRoute<void>(
+                    //     builder: (context) => const NotificationPage(),
+                    //   ),
+                    // );
                   },
                 ),
               ],

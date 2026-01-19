@@ -194,8 +194,8 @@ class _ItemsList extends StatelessWidget {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey[200]!),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
         ),
         child: Column(
           children: [
@@ -217,9 +217,11 @@ class _ItemsList extends StatelessWidget {
         return Container(
           margin: EdgeInsets.only(bottom: 6),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey[200]!),
+            color: Colors.grey[50], // Matches CompactTextField fill
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey[300]!,
+            ), // Matches CompactTextField border
           ),
           child: ListTile(
             dense: true,
@@ -307,22 +309,25 @@ class _AddItemButton extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
-          border: Border.all(color: Color(0xFF1E88E5)),
-          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFF1E88E5).withOpacity(0.08),
+          border: Border.all(
+            color: const Color(0xFF1E88E5).withOpacity(0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline, color: Color(0xFF1E88E5), size: 18),
+            Icon(Icons.add_circle_outline, color: Color(0xFF1E88E5), size: 20),
             SizedBox(width: 8),
             Text(
               'Add Item',
               style: TextStyle(
                 color: Color(0xFF1E88E5),
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 14,
               ),
             ),
           ],
@@ -370,10 +375,10 @@ class _LocationPicker extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           color: Colors.grey[50],
         ),
         child: Row(
@@ -381,9 +386,9 @@ class _LocationPicker extends StatelessWidget {
             Icon(
               Icons.location_on,
               color: location != null ? Color(0xFFE53935) : Colors.grey,
-              size: 22,
+              size: 24,
             ),
-            SizedBox(width: 10),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +397,7 @@ class _LocationPicker extends StatelessWidget {
                     location?.properties?.name ?? 'Select location',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: 14,
                       color: location != null
                           ? Colors.grey[800]
                           : Colors.grey[500],
@@ -402,7 +407,7 @@ class _LocationPicker extends StatelessWidget {
                     SizedBox(height: 2),
                     Text(
                       _formatAddress(location!.properties),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -486,13 +491,15 @@ class _ImagePicker extends StatelessWidget {
             await Future.delayed(const Duration(milliseconds: 50));
             onPick();
           },
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.grey[50],
+              color: const Color(0xFF1E88E5).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF1E88E5).withOpacity(0.3),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -500,7 +507,7 @@ class _ImagePicker extends StatelessWidget {
                 Icon(
                   Icons.add_photo_alternate,
                   color: Color(0xFF1E88E5),
-                  size: 22,
+                  size: 24,
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -508,7 +515,7 @@ class _ImagePicker extends StatelessWidget {
                   style: TextStyle(
                     color: Color(0xFF1E88E5),
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
                 ),
               ],
@@ -547,10 +554,10 @@ class _DeadlinePicker extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           color: Colors.grey[50],
         ),
         child: Row(
@@ -560,7 +567,7 @@ class _DeadlinePicker extends StatelessWidget {
               color: deadline != null ? Color(0xFF7B1FA2) : Colors.grey,
               size: 20,
             ),
-            SizedBox(width: 10),
+            SizedBox(width: 12),
             Text(
               deadline != null
                   ? '${deadline!.day}/${deadline!.month}/${deadline!.year}'
@@ -574,7 +581,7 @@ class _DeadlinePicker extends StatelessWidget {
             if (deadline != null)
               GestureDetector(
                 onTap: () => onSelect(null),
-                child: Icon(Icons.close, color: Colors.grey, size: 18),
+                child: Icon(Icons.close, color: Colors.grey, size: 20),
               ),
           ],
         ),
@@ -591,35 +598,55 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: Color(0xFF1E88E5),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E88E5).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: isLoading
-          ? SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.send, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  'SUBMIT REQUEST',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
                 ),
-              ],
-            ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.send, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'SUBMIT REQUEST',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

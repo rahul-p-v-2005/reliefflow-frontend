@@ -12,22 +12,24 @@ class ReliefCentersMap extends StatelessWidget {
         borderRadius: BorderRadiusGeometry.circular(24),
         child: Stack(
           children: [
-            SizedBox(
-              height: 100,
-              width: double.infinity,
-              child: GoogleMap(
-                initialCameraPosition: const CameraPosition(
-                  target: LatLng(11.917, 75.335), // Kerala region
-                  zoom: 9.2,
+            IgnorePointer(
+              child: SizedBox(
+                height: 100,
+                width: double.infinity,
+                child: GoogleMap(
+                  initialCameraPosition: const CameraPosition(
+                    target: LatLng(11.917, 75.335), // Kerala region
+                    zoom: 9.2,
+                  ),
+                  mapType: MapType.normal,
+                  zoomControlsEnabled: false,
+                  scrollGesturesEnabled: false,
+                  rotateGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  zoomGesturesEnabled: false,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
                 ),
-                mapType: MapType.normal,
-                zoomControlsEnabled: false,
-                scrollGesturesEnabled: false,
-                rotateGesturesEnabled: false,
-                tiltGesturesEnabled: false,
-                zoomGesturesEnabled: false,
-                myLocationButtonEnabled: false,
-                mapToolbarEnabled: false,
               ),
             ),
             Center(
