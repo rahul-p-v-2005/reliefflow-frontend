@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:reliefflow_frontend_public_app/screens/auth/login_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -52,19 +51,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return BlocListener<AccountCubit, AccountState>(
       listener: (context, state) {
         if (state is AccountError) {
+          // Show error message (401 redirect is handled centrally in MainNavigation)
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
+              backgroundColor: state.statusCode == 401 ? Colors.orange : null,
             ),
           );
-          if (state.statusCode == 401) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute<void>(
-                builder: (context) => const LoginScreen(),
-              ),
-              (route) => false,
-            );
-          }
         } else if (state is AccountLoaded) {
           Navigator.of(context).pop(state.user);
         }

@@ -19,7 +19,11 @@ Future<Position> _determinePosition() async {
     // Location services are not enabled don't continue
     // accessing the position and request users of the
     // App to enable the location services.
-    return Future.error('Location services are disabled.');
+    return Future.error((
+      message:
+          'Location services are disabled. Enable location services in your device settings.',
+      code: 'DISABLED',
+    ));
   }
 
   permission = await Geolocator.checkPermission();
@@ -31,15 +35,20 @@ Future<Position> _determinePosition() async {
       // Android's shouldShowRequestPermissionRationale
       // returned true. According to Android guidelines
       // your App should show an explanatory UI now.
-      return Future.error('Location permissions are denied');
+      return Future.error((
+        message: 'Location permissions are denied',
+        code: 'DENIED',
+      ));
     }
   }
 
   if (permission == LocationPermission.deniedForever) {
     // Permissions are denied forever, handle appropriately.
-    return Future.error(
-      'Location permissions are permanently denied, we cannot request permissions.',
-    );
+    return Future.error((
+      message:
+          'Location permissions are permanently denied, we cannot request permissions.',
+      code: 'PERMANENTLY_DENIED',
+    ));
   }
 
   // When we reach here, permissions are granted and we can
@@ -54,34 +63,64 @@ class WeatherCard extends StatefulWidget {
   State<WeatherCard> createState() => _WeatherCardState();
 }
 
-class _WeatherCardState extends State<WeatherCard> {
+class _WeatherCardState extends State<WeatherCard> with WidgetsBindingObserver {
+  int _refreshKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Auto-refresh when app resumes (user returns from settings)
+    if (state == AppLifecycleState.resumed) {
+      setState(() {
+        _refreshKey++;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
+      key: ValueKey(_refreshKey),
       future: _determinePosition(),
       builder: (context, snapshot) {
         // Checking if future is resolved
         if (snapshot.connectionState == ConnectionState.done) {
           // If we got an error
           if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: Column(
-                children: [
-                  Text(
-                    '${snapshot.error}',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  RetryButton(
-                    onPressed: () {
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-            );
+            final error = snapshot.error;
+            String errorMessage = 'An error occurred';
+            bool isServiceDisabled = false;
 
-            // if we got our data
+            // Check if error is a record with message and code
+            if (error != null) {
+              try {
+                final errorRecord = error as ({String message, String code});
+                errorMessage = errorRecord.message;
+                isServiceDisabled = errorRecord.code == 'DISABLED';
+              } catch (_) {
+                errorMessage = error.toString();
+              }
+            }
+
+            return _WeatherErrorCard(
+              message: errorMessage,
+              showRetry: !isServiceDisabled,
+              showOpenSettings: isServiceDisabled,
+              onRetry: () => setState(() {}),
+            );
           } else if (snapshot.hasData) {
+            // if we got our data
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -144,6 +183,174 @@ class RetryButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPressed,
       child: const Text('Retry'),
+    );
+  }
+}
+
+/// Error card widget with gradient background and typing animation
+class _WeatherErrorCard extends StatelessWidget {
+  final String message;
+  final bool showRetry;
+  final bool showOpenSettings;
+  final VoidCallback onRetry;
+
+  const _WeatherErrorCard({
+    required this.message,
+    required this.showRetry,
+    required this.onRetry,
+    this.showOpenSettings = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF64748B),
+            Color(0xFF475569),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Location off icon
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.location_off_rounded,
+              size: 32,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Typing animation text
+          _TypewriterText(
+            text: message,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (showOpenSettings)
+            TextButton.icon(
+              onPressed: () => Geolocator.openLocationSettings(),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.settings_rounded, size: 18),
+              label: const Text('Open Location Settings'),
+            ),
+          if (showRetry)
+            TextButton.icon(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Try Again'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Typewriter text animation widget
+class _TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle? style;
+
+  const _TypewriterText({
+    required this.text,
+    this.style,
+  });
+
+  @override
+  State<_TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<_TypewriterText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<int> _characterCount;
+  String _displayedText = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: Duration(milliseconds: widget.text.length * 30),
+      vsync: this,
+    );
+
+    _characterCount =
+        IntTween(
+          begin: 0,
+          end: widget.text.length,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOut,
+          ),
+        );
+
+    _characterCount.addListener(() {
+      setState(() {
+        _displayedText = widget.text.substring(0, _characterCount.value);
+      });
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: widget.style,
+      textAlign: TextAlign.center,
     );
   }
 }

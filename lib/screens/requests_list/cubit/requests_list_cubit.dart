@@ -50,6 +50,9 @@ class RequestsListCubit extends Cubit<RequestsListState> {
       final donationResponse = results[0];
       final aidResponse = results[1];
 
+      log(donationResponse.body);
+      log(aidResponse.body);
+
       // Check for auth errors
       if (donationResponse.statusCode == 401 || aidResponse.statusCode == 401) {
         emit(

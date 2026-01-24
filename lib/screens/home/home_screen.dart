@@ -201,6 +201,7 @@ class _AidRequestList extends StatelessWidget {
         List<AidRequest> requests = [];
         bool isLoading = false;
         String? error;
+        int statusCode = 0;
 
         if (state is RequestsListLoading) {
           isLoading = true;
@@ -208,6 +209,7 @@ class _AidRequestList extends StatelessWidget {
           requests = state.aidRequests.take(3).toList();
         } else if (state is RequestsListError) {
           error = state.message;
+          statusCode = state.statusCode;
         }
 
         return Container(
@@ -268,25 +270,47 @@ class _AidRequestList extends StatelessWidget {
                     child: Column(
                       children: [
                         Icon(
-                          Icons.error_outline,
-                          color: Colors.grey[400],
+                          statusCode == 401
+                              ? Icons.lock_outline
+                              : Icons.error_outline,
+                          color: statusCode == 401
+                              ? Colors.orange
+                              : Colors.grey[400],
                           size: 32,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           error,
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: statusCode == 401
+                                ? Colors.orange
+                                : Colors.grey[500],
                             fontSize: 13,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            context.read<RequestsListCubit>().loadRequests();
-                          },
-                          child: const Text('Retry'),
-                        ),
+                        if (statusCode == 401) ...[
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Redirecting...',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 11,
+                            ),
+                          ),
+                        ] else
+                          TextButton(
+                            onPressed: () {
+                              context.read<RequestsListCubit>().loadRequests();
+                            },
+                            child: const Text('Retry'),
+                          ),
                       ],
                     ),
                   ),
@@ -766,6 +790,7 @@ class _DonationRequestList extends StatelessWidget {
         List<DonationRequest> requests = [];
         bool isLoading = false;
         String? error;
+        int statusCode = 0;
 
         if (state is RequestsListLoading) {
           isLoading = true;
@@ -773,6 +798,7 @@ class _DonationRequestList extends StatelessWidget {
           requests = state.donationRequests.take(3).toList();
         } else if (state is RequestsListError) {
           error = state.message;
+          statusCode = state.statusCode;
         }
 
         return Container(
@@ -834,25 +860,47 @@ class _DonationRequestList extends StatelessWidget {
                     child: Column(
                       children: [
                         Icon(
-                          Icons.error_outline,
-                          color: Colors.grey[400],
+                          statusCode == 401
+                              ? Icons.lock_outline
+                              : Icons.error_outline,
+                          color: statusCode == 401
+                              ? Colors.orange
+                              : Colors.grey[400],
                           size: 32,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           error,
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: statusCode == 401
+                                ? Colors.orange
+                                : Colors.grey[500],
                             fontSize: 13,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            context.read<RequestsListCubit>().loadRequests();
-                          },
-                          child: const Text('Retry'),
-                        ),
+                        if (statusCode == 401) ...[
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Redirecting...',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 11,
+                            ),
+                          ),
+                        ] else
+                          TextButton(
+                            onPressed: () {
+                              context.read<RequestsListCubit>().loadRequests();
+                            },
+                            child: const Text('Retry'),
+                          ),
                       ],
                     ),
                   ),

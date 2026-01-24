@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
+import 'package:reliefflow_frontend_public_app/screens/notifications/notification_screen.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -13,15 +16,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
           children: [
             Row(
               children: [
-                // Image(
-                //   image: AssetImage('assets/images/logo.jpg'),
-                //   height: 12,
-                // ),
                 Image(
-                  // alignment: AlignmentGeometry.topCenter,
-                  // fit: BoxFit.cover,
-                  //  width: 1,
-                  //   height: 1,
                   image: AssetImage('assets/images/logo3.png'),
                   height: 24,
                 ),
@@ -47,18 +42,68 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
 
             Row(
               children: [
-                IconButton(
-                  iconSize: 32,
-                  icon: const Icon(
-                    Icons.notifications,
-                    size: 26,
-                  ),
-                  onPressed: () {
-                    // Navigator.of(context).push(
-                    //   MaterialPageRoute<void>(
-                    //     builder: (context) => const NotificationPage(),
-                    //   ),
-                    // );
+                // Notification bell with badge
+                BlocBuilder<NotificationCubit, NotificationState>(
+                  builder: (context, state) {
+                    int unreadCount = 0;
+                    if (state is NotificationLoaded) {
+                      unreadCount = state.unreadCount;
+                    }
+
+                    return Stack(
+                      children: [
+                        IconButton(
+                          iconSize: 32,
+                          icon: const Icon(
+                            Icons.notifications,
+                            size: 26,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) =>
+                                    const NotificationScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        // Badge for unread count
+                        if (unreadCount > 0)
+                          Positioned(
+                            right: 4,
+                            top: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withOpacity(0.4),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                unreadCount > 99
+                                    ? '99+'
+                                    : unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
                   },
                 ),
               ],

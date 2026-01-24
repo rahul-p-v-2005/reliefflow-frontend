@@ -60,7 +60,7 @@ class _RequestListScreenBodyState extends State<_RequestListScreenBody> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is RequestsListError) {
-            return _buildError(state.message);
+            return _buildError(state.message, statusCode: state.statusCode);
           }
           if (state is RequestsListLoaded) {
             return RefreshIndicator(
@@ -136,19 +136,44 @@ class _RequestListScreenBodyState extends State<_RequestListScreenBody> {
     );
   }
 
-  Widget _buildError(String message) {
+  Widget _buildError(String message, {int statusCode = 0}) {
+    // For 401 errors, show session expired message (redirect handled by MainNavigation)
+    final isSessionExpired = statusCode == 401;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          Text(message, style: TextStyle(color: Colors.grey[600])),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.read<RequestsListCubit>().loadRequests(),
-            child: const Text('Retry'),
+          Icon(
+            isSessionExpired ? Icons.lock_outline : Icons.error_outline,
+            size: 48,
+            color: isSessionExpired ? Colors.orange : Colors.grey[400],
           ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: TextStyle(
+              color: isSessionExpired ? Colors.orange : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          if (isSessionExpired) ...[
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Redirecting to login...',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ] else
+            ElevatedButton(
+              onPressed: () => context.read<RequestsListCubit>().loadRequests(),
+              child: const Text('Retry'),
+            ),
         ],
       ),
     );
