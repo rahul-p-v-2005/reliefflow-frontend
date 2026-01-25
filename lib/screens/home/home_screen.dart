@@ -19,6 +19,7 @@ import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/reque
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
 import 'package:star_menu/star_menu.dart';
+import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,15 +28,26 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh notifications when app comes to foreground
+      // This ensures badge updates after receiving background notifications
+      context.read<NotificationCubit>().silentRefresh();
+    }
   }
 
   final StarMenuController controller = StarMenuController();

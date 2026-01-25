@@ -46,6 +46,8 @@ class _MyAppState extends State<MyApp> {
       theme: _buildTheme(Brightness.light),
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
+      restorationScopeId:
+          'reliefflow_app', // Enable state restoration for activity recreation
     );
   }
 }

@@ -38,6 +38,24 @@ class NotificationCubit extends Cubit<NotificationState> {
     await loadNotifications();
   }
 
+  /// Silently refresh notifications without showing loading state
+  /// Use this for background refreshes triggered by FCM push notifications
+  Future<void> silentRefresh() async {
+    try {
+      final notifications = await NotificationService.getNotifications();
+      final unreadCount = notifications.where((n) => !n.isRead).length;
+      emit(
+        NotificationLoaded(
+          notifications: notifications,
+          unreadCount: unreadCount,
+        ),
+      );
+    } catch (e) {
+      // Silently fail for background refresh - don't disrupt current state
+      // This is intentional: we don't want FCM-triggered refreshes to show errors
+    }
+  }
+
   /// Mark a notification as read
   Future<void> markAsRead(String notificationId) async {
     final currentState = state;

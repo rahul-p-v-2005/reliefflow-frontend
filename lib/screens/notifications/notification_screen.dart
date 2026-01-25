@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reliefflow_frontend_public_app/models/notification_model.dart';
@@ -11,11 +12,25 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
     // Load notifications when screen opens
     context.read<NotificationCubit>().loadNotifications();
+
+    // Set up periodic refresh every 30 seconds while on this screen
+    // This acts as a fallback to ensure notifications stay updated
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      context.read<NotificationCubit>().silentRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _refreshNotifications() async {

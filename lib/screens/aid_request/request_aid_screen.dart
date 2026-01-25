@@ -88,6 +88,12 @@ class _RequestAidState extends State<RequestAidScreen> {
     debugPrint('Source: ${source.name}');
     debugPrint('Starting image picker...');
 
+    // Store a reference to check if widget is still mounted after async operation
+    if (!mounted) {
+      debugPrint('Widget not mounted before image picker');
+      return;
+    }
+
     try {
       debugPrint('Calling _imagePicker.pickImage()...');
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -97,17 +103,23 @@ class _RequestAidState extends State<RequestAidScreen> {
         imageQuality: 50, // Reduced from 80 to lower memory usage
       );
 
+      // Check mounted again after async operation completes
+      if (!mounted) {
+        debugPrint('Widget not mounted after image picker returned');
+        return;
+      }
+
       debugPrint('pickImage() completed');
       debugPrint('pickedFile: ${pickedFile?.path ?? 'null'}');
 
-      if (pickedFile != null && mounted) {
+      if (pickedFile != null) {
         debugPrint('Setting selected image...');
         setState(() {
           _selectedImage = File(pickedFile.path);
         });
         debugPrint('Image set successfully');
       } else {
-        debugPrint('No file picked or widget not mounted');
+        debugPrint('No file picked');
       }
     } on Exception catch (e, stackTrace) {
       debugPrint('=== IMAGE PICKER ERROR ===');

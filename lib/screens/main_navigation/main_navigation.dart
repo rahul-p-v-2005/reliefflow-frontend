@@ -9,6 +9,7 @@ import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/reque
 import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/services/auth_service.dart';
+import 'package:reliefflow_frontend_public_app/services/fcm_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,11 +20,25 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   late PersistentTabController _controller;
+  bool _fcmCallbacksSetup = false;
 
   @override
   void initState() {
     super.initState();
     _controller = PersistentTabController(initialIndex: 0);
+  }
+
+  /// Set up FCM callbacks to refresh notifications when push arrives
+  void _setupFcmCallbacks(BuildContext context) {
+    if (_fcmCallbacksSetup) return;
+    _fcmCallbacksSetup = true;
+
+    FcmService().onNotificationReceived = () {
+      // Refresh notification cubit when push arrives
+      if (context.mounted) {
+        context.read<NotificationCubit>().silentRefresh();
+      }
+    };
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
@@ -70,55 +85,66 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
       ],
       // Global listener for 401 Unauthorized errors from all cubits
-      child: MultiBlocListener(
-        listeners: [
-          BlocListener<RequestsListCubit, RequestsListState>(
-            listenWhen: (previous, current) =>
-                current is RequestsListError && current.statusCode == 401,
-            listener: (context, state) {
-              AuthService().handleUnauthorized(context);
-            },
-          ),
-          BlocListener<AccountCubit, AccountState>(
-            listenWhen: (previous, current) =>
-                current is AccountError && current.statusCode == 401,
-            listener: (context, state) {
-              AuthService().handleUnauthorized(context);
-            },
-          ),
-          BlocListener<NotificationCubit, NotificationState>(
-            listenWhen: (previous, current) =>
-                current is NotificationError && current.statusCode == 401,
-            listener: (context, state) {
-              AuthService().handleUnauthorized(context);
-            },
-          ),
-        ],
-        child: PersistentTabView.custom(
-          context,
-          controller: _controller,
-          itemCount: _navBarsItems().length,
-          screens: [
-            CustomNavBarScreen(screen: const HomeScreen()),
-            CustomNavBarScreen(screen: const RequestListScreen()),
-            CustomNavBarScreen(screen: const TipsScreen()),
-            CustomNavBarScreen(screen: const AccountPage()), // Profile screen
-          ],
-          confineToSafeArea: true,
-          handleAndroidBackButtonPress: true,
-          stateManagement: true,
-          hideNavigationBarWhenKeyboardAppears: true,
-          customWidget: CustomNavBar(
-            items: _navBarsItems(),
-            selectedIndex: _controller.index,
-            onItemSelected: (index) {
-              setState(() {
-                _controller.index = index;
-              });
-            },
-          ),
-          backgroundColor: Colors.white,
-        ),
+      child: Builder(
+        builder: (builderContext) {
+          // Set up FCM callbacks after bloc providers are available
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _setupFcmCallbacks(builderContext);
+          });
+
+          return MultiBlocListener(
+            listeners: [
+              BlocListener<RequestsListCubit, RequestsListState>(
+                listenWhen: (previous, current) =>
+                    current is RequestsListError && current.statusCode == 401,
+                listener: (context, state) {
+                  AuthService().handleUnauthorized(context);
+                },
+              ),
+              BlocListener<AccountCubit, AccountState>(
+                listenWhen: (previous, current) =>
+                    current is AccountError && current.statusCode == 401,
+                listener: (context, state) {
+                  AuthService().handleUnauthorized(context);
+                },
+              ),
+              BlocListener<NotificationCubit, NotificationState>(
+                listenWhen: (previous, current) =>
+                    current is NotificationError && current.statusCode == 401,
+                listener: (context, state) {
+                  AuthService().handleUnauthorized(context);
+                },
+              ),
+            ],
+            child: PersistentTabView.custom(
+              builderContext,
+              controller: _controller,
+              itemCount: _navBarsItems().length,
+              screens: [
+                CustomNavBarScreen(screen: const HomeScreen()),
+                CustomNavBarScreen(screen: const RequestListScreen()),
+                CustomNavBarScreen(screen: const TipsScreen()),
+                CustomNavBarScreen(
+                  screen: const AccountPage(),
+                ), // Profile screen
+              ],
+              confineToSafeArea: true,
+              handleAndroidBackButtonPress: true,
+              stateManagement: true,
+              hideNavigationBarWhenKeyboardAppears: true,
+              customWidget: CustomNavBar(
+                items: _navBarsItems(),
+                selectedIndex: _controller.index,
+                onItemSelected: (index) {
+                  setState(() {
+                    _controller.index = index;
+                  });
+                },
+              ),
+              backgroundColor: Colors.white,
+            ),
+          );
+        },
       ),
     );
   }
