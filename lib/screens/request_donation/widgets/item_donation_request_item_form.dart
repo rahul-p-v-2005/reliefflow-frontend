@@ -17,7 +17,17 @@ class _ItemDonationRequestItemFormState
   ItemCategory? selectedItemCategory;
   String description = '';
   String qty = '';
+  String selectedUnit = 'pieces';
   String? error;
+
+  final List<String> unitOptions = [
+    'pieces',
+    'kg',
+    'liters',
+    'packs',
+    'boxes',
+    'units',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +113,65 @@ class _ItemDonationRequestItemFormState
               keyboardType: TextInputType.number,
               onChanged: (v) => qty = v,
             ),
+            SizedBox(height: 12),
+
+            // Unit
+            _buildLabel("Unit"),
+            SizedBox(height: 4),
+            DropdownButtonFormField<String>(
+              value: selectedUnit,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              dropdownColor: Colors.white,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1E88E5),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              items: unitOptions.map((unit) {
+                return DropdownMenuItem<String>(
+                  value: unit,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _getUnitIcon(unit),
+                        size: 20,
+                        color: const Color(0xFF1E88E5),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _getUnitLabel(unit),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => selectedUnit = value ?? 'pieces'),
+            ),
             SizedBox(height: 16),
 
             // Error
@@ -144,6 +213,7 @@ class _ItemDonationRequestItemFormState
                       category: selectedItemCategory!,
                       description: description,
                       quantity: qty,
+                      unit: selectedUnit,
                     ),
                   );
                 },
@@ -181,6 +251,44 @@ class _ItemDonationRequestItemFormState
     );
   }
 
+  IconData _getUnitIcon(String unit) {
+    switch (unit) {
+      case 'pieces':
+        return Icons.category;
+      case 'kg':
+        return Icons.scale;
+      case 'liters':
+        return Icons.water_drop;
+      case 'packs':
+        return Icons.inventory;
+      case 'boxes':
+        return Icons.inventory_2;
+      case 'units':
+        return Icons.grid_view;
+      default:
+        return Icons.category;
+    }
+  }
+
+  String _getUnitLabel(String unit) {
+    switch (unit) {
+      case 'pieces':
+        return 'Pieces';
+      case 'kg':
+        return 'Kilograms (kg)';
+      case 'liters':
+        return 'Liters (L)';
+      case 'packs':
+        return 'Packs';
+      case 'boxes':
+        return 'Boxes';
+      case 'units':
+        return 'Units';
+      default:
+        return unit.toUpperCase();
+    }
+  }
+
   Widget _buildTextField({
     required String hint,
     TextInputType? keyboardType,
@@ -189,6 +297,7 @@ class _ItemDonationRequestItemFormState
     return TextFormField(
       onChanged: onChanged,
       keyboardType: keyboardType,
+      onTapOutside: (event) => FocusScope.of(context).unfocus(),
       style: TextStyle(fontSize: 14),
       decoration: InputDecoration(
         isDense: true,

@@ -255,7 +255,7 @@ class _ItemsList extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'x${item.quantity}',
+                    '${item.quantity} ${item.unit}',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 11,

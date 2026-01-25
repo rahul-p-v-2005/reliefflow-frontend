@@ -4,12 +4,14 @@ class ItemDetail {
   final String category;
   final String? description;
   final String quantity;
+  final String? unit;
 
   ItemDetail({
     this.id,
     required this.category,
     this.description,
     required this.quantity,
+    this.unit,
   });
 
   factory ItemDetail.fromJson(Map<String, dynamic> json) {
@@ -17,7 +19,8 @@ class ItemDetail {
       id: json['_id'] as String?,
       category: json['category'] as String? ?? '',
       description: json['description'] as String?,
-      quantity: json['quantity'] as String? ?? '',
+      quantity: json['quantity']?.toString() ?? '',
+      unit: json['unit'] as String? ?? 'pieces',
     );
   }
 
@@ -27,6 +30,7 @@ class ItemDetail {
       'category': category,
       if (description != null) 'description': description,
       'quantity': quantity,
+      'unit': unit ?? 'pieces',
     };
   }
 }

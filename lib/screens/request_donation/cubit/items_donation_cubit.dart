@@ -101,6 +101,7 @@ class ItemsDonationCubit extends Cubit<ItemsDonationState> {
               'category': item.category.categoryName.toLowerCase(),
               'description': item.description,
               'quantity': item.quantity,
+              'unit': item.unit,
             },
           )
           .toList();

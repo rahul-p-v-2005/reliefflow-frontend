@@ -49,7 +49,6 @@ class _ItemTypeDropdownState extends State<ItemTypeDropdown> {
           vertical: 12,
         ),
         hintText: 'Select item category',
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(

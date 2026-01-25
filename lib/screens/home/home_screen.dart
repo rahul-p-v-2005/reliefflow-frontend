@@ -60,24 +60,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: Container(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: ListView(
-            children: [
-              ReliefCentersMap(),
-              SizedBox(
-                height: 8,
-              ),
-              WeatherCard(),
-              SizedBox(
-                height: 8,
-              ),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              context.read<RequestsListCubit>().refresh();
+            },
+            color: const Color(0xFF1E88E5),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ReliefCentersMap(),
+                SizedBox(
+                  height: 8,
+                ),
+                WeatherCard(),
+                SizedBox(
+                  height: 8,
+                ),
 
-              _AidRequestList(),
-              SizedBox(
-                height: 8,
-              ),
-              // _RequestButtonsRow(),
-              _DonationRequestList(),
-            ],
+                _AidRequestList(),
+                SizedBox(
+                  height: 8,
+                ),
+                // _RequestButtonsRow(),
+                _DonationRequestList(),
+              ],
+            ),
           ),
         ),
       ),

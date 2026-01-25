@@ -1944,7 +1944,7 @@ class DonationRequestBottomSheet extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'Qty: ${item.quantity}',
+                              'Qty: ${item.quantity} ${item.unit ?? 'pieces'}',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -2487,7 +2487,7 @@ class DonationRequestTrackingScreen extends StatelessWidget {
                                       ),
                                     ),
                                     child: Text(
-                                      'Qty: ${item.quantity}',
+                                      'Qty: ${item.quantity} ${item.unit ?? 'pieces'}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
