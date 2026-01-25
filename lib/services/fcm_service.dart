@@ -119,7 +119,14 @@ class FcmService {
   /// Handle notification tap
   void _onNotificationTap(NotificationResponse response) {
     developer.log('Notification tapped: ${response.payload}', name: 'FCM');
-    // You can navigate to specific screens based on payload here
+    if (response.payload != null) {
+      try {
+        final data = json.decode(response.payload!);
+        onNotificationTap?.call(data);
+      } catch (e) {
+        developer.log('Error parsing payload: $e', name: 'FCM');
+      }
+    }
   }
 
   /// Set up message handlers
@@ -143,6 +150,7 @@ class FcmService {
       );
       // Trigger callback to refresh notification state
       onNotificationReceived?.call();
+      _handleNavigation(message);
     });
 
     // Check if app was opened from terminated state via notification
@@ -152,10 +160,31 @@ class FcmService {
           'App opened from terminated: ${message.notification?.title}',
           name: 'FCM',
         );
-        // Handle navigation
+        _handleNavigation(message);
       }
     });
   }
+
+  /// Handle navigation based on message payload
+  void _handleNavigation(RemoteMessage message) {
+    if (message.data.isNotEmpty) {
+      final type = message.data['type'];
+      // Use a global navigator key or a callback exposed to main.dart
+      // For now, we'll emit an event or rely on onNotificationReceived if it carries payload
+      // But typically we need a GlobalKey<NavigatorState>
+
+      developer.log('Navigation required for type: $type', name: 'FCM');
+      // For this app, since we don't have a global key setup visible here,
+      // we might need to rely on the UI layer listening to a stream,
+      // or we can try to find the context if possible (not possible in service).
+
+      // Better approach: Expose a stream of "actions"
+      onNotificationTap?.call(message.data);
+    }
+  }
+
+  /// Callback for navigation
+  void Function(Map<String, dynamic>)? onNotificationTap;
 
   /// Show local notification when app is in foreground
   Future<void> _showLocalNotification(RemoteMessage message) async {

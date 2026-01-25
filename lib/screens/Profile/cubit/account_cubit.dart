@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:http/http.dart';
@@ -62,6 +63,7 @@ class AccountCubit extends Cubit<AccountState> {
     required String email,
     required String address,
     required String phoneNumber,
+    File? profileImage,
   }) async {
     emit(AccountLoading());
 
@@ -73,34 +75,71 @@ class AccountCubit extends Cubit<AccountState> {
       return;
     }
 
-    var body = jsonEncode({
-      "email": email,
-      "name": name,
-      "address": address,
-      "phoneNumber": phoneNumber,
-    });
-
     try {
-      final response = await put(
-        Uri.parse('$kBaseUrl/public/update'),
-        headers: {
-          "Accept": "/",
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: body,
-      );
+      // Use multipart request if there's an image to upload
+      if (profileImage != null) {
+        var request = MultipartRequest(
+          'PUT',
+          Uri.parse('$kBaseUrl/public/update'),
+        );
 
-      if (response.statusCode == 200) {
-        final parsedBody = jsonDecode(response.body) as Map<String, dynamic>;
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+        });
 
-        final user = User.fromJson(parsedBody['data']);
+        // Add text fields
+        request.fields['name'] = name;
+        request.fields['email'] = email;
+        request.fields['address'] = address;
+        request.fields['phoneNumber'] = phoneNumber;
 
-        emit(AccountLoaded(user: user));
-      } else if (response.statusCode == 401) {
-        emit(AccountError(message: 'Unauthorized access.', statusCode: 401));
+        // Add image file
+        var multipartFile = await MultipartFile.fromPath(
+          'profile_image',
+          profileImage.path,
+        );
+        request.files.add(multipartFile);
+
+        var streamedResponse = await request.send();
+        var response = await Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          final parsedBody = jsonDecode(response.body) as Map<String, dynamic>;
+          final user = User.fromJson(parsedBody['data']);
+          emit(AccountLoaded(user: user));
+        } else if (response.statusCode == 401) {
+          emit(AccountError(message: 'Unauthorized access.', statusCode: 401));
+        } else {
+          emit(AccountError(message: 'Failed to update account details.'));
+        }
       } else {
-        emit(AccountError(message: 'Failed to update account details.'));
+        // Regular JSON request without image
+        var body = jsonEncode({
+          "email": email,
+          "name": name,
+          "address": address,
+          "phoneNumber": phoneNumber,
+        });
+
+        final response = await put(
+          Uri.parse('$kBaseUrl/public/update'),
+          headers: {
+            "Accept": "/",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: body,
+        );
+
+        if (response.statusCode == 200) {
+          final parsedBody = jsonDecode(response.body) as Map<String, dynamic>;
+          final user = User.fromJson(parsedBody['data']);
+          emit(AccountLoaded(user: user));
+        } else if (response.statusCode == 401) {
+          emit(AccountError(message: 'Unauthorized access.', statusCode: 401));
+        } else {
+          emit(AccountError(message: 'Failed to update account details.'));
+        }
       }
     } catch (e) {
       emit(
