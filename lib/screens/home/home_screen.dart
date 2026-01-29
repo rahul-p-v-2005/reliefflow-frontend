@@ -440,11 +440,7 @@ class _AidRequestList extends StatelessWidget {
                                                 ),
                                                 const SizedBox(width: 2),
                                                 Text(
-                                                  request.status[0]
-                                                          .toUpperCase() +
-                                                      request.status
-                                                          .substring(1)
-                                                          .replaceAll('_', ' '),
+                                                  _getStatusText(request),
                                                   style: const TextStyle(
                                                     fontSize: 9,
                                                     color: Colors.white,
@@ -501,6 +497,22 @@ class _AidRequestList extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getStatusText(AidRequest request) {
+    // return request.status[0]
+    //                                                     .toUpperCase() +
+    //                                                 request.status
+    //                                                     .substring(1)
+    //                                                     .replaceAll('_', ' ');
+    return switch (request.status) {
+      'pending' => 'Pending',
+      'accepted' => 'Accepted by admin',
+      'in_progress' => 'In Progress',
+      'rejected' => 'Rejected by admin',
+      'completed' => 'Completed',
+      _ => 'Unknown',
+    };
   }
 }
 

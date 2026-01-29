@@ -32,6 +32,7 @@ class _RequestListScreenBodyState extends State<_RequestListScreenBody> {
     "All",
     "pending",
     "accepted",
+    "in_progress",
     "completed",
     "rejected",
   ];
@@ -122,7 +123,8 @@ class _RequestListScreenBodyState extends State<_RequestListScreenBody> {
               child: Text(
                 label == 'All'
                     ? 'All'
-                    : label[0].toUpperCase() + label.substring(1),
+                    : label[0].toUpperCase() +
+                          label.substring(1).replaceAll('_', ' '),
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.grey[700],
                   fontWeight: FontWeight.w600,
@@ -192,6 +194,8 @@ class _AidRequestsSection extends StatelessWidget {
         return Colors.orange;
       case 'accepted':
         return Colors.blue;
+      case 'in_progress':
+        return Colors.teal;
       case 'completed':
         return Colors.green;
       case 'rejected':
@@ -207,6 +211,8 @@ class _AidRequestsSection extends StatelessWidget {
         return Icons.access_time;
       case 'accepted':
         return Icons.check_circle_outline;
+      case 'in_progress':
+        return Icons.sync;
       case 'completed':
         return Icons.check_circle;
       case 'rejected':
@@ -380,10 +386,7 @@ class _AidRequestsSection extends StatelessWidget {
                                             ),
                                             const SizedBox(width: 2),
                                             Text(
-                                              request.status[0].toUpperCase() +
-                                                  request.status
-                                                      .substring(1)
-                                                      .replaceAll('_', ' '),
+                                              _getStatusText(request),
                                               style: const TextStyle(
                                                 fontSize: 10,
                                                 color: Colors.white,
@@ -466,6 +469,22 @@ class _AidRequestsSection extends StatelessWidget {
     );
   }
 
+  String _getStatusText(AidRequest request) {
+    // return request.status[0]
+    //                                                     .toUpperCase() +
+    //                                                 request.status
+    //                                                     .substring(1)
+    //                                                     .replaceAll('_', ' ');
+    return switch (request.status) {
+      'pending' => 'Pending',
+      'accepted' => 'Accepted by admin',
+      'in_progress' => 'In Progress',
+      'rejected' => 'Rejected by admin',
+      'completed' => 'Completed',
+      _ => 'Unknown',
+    };
+  }
+
   void _showAidRequestDetails(BuildContext context, AidRequest request) {
     showModalBottomSheet(
       context: context,
@@ -496,6 +515,8 @@ class _AidRequestBottomSheet extends StatelessWidget {
         return Colors.orange;
       case 'accepted':
         return Colors.blue;
+      case 'in_progress':
+        return Colors.teal;
       case 'completed':
         return Colors.green;
       case 'rejected':
@@ -528,6 +549,8 @@ class _AidRequestBottomSheet extends StatelessWidget {
         return Icons.access_time;
       case 'accepted':
         return Icons.check_circle_outline;
+      case 'in_progress':
+        return Icons.sync;
       case 'completed':
         return Icons.check_circle;
       case 'rejected':
@@ -1537,6 +1560,8 @@ class _RequestItem extends StatelessWidget {
         return Colors.orange;
       case 'accepted':
         return Colors.blue;
+      case 'in_progress':
+        return Colors.teal;
       case 'completed':
         return Colors.green;
       case 'rejected':
@@ -1587,6 +1612,8 @@ class _StatusBadge extends StatelessWidget {
         return Icons.access_time;
       case 'accepted':
         return Icons.check_circle_outline;
+      case 'in_progress':
+        return Icons.sync;
       case 'completed':
         return Icons.check_circle;
       case 'rejected':
@@ -1614,6 +1641,8 @@ class DonationRequestBottomSheet extends StatelessWidget {
         return Colors.orange;
       case 'accepted':
         return Colors.blue;
+      case 'in_progress':
+        return Colors.teal;
       case 'completed':
         return Colors.green;
       case 'rejected':
@@ -1631,6 +1660,8 @@ class DonationRequestBottomSheet extends StatelessWidget {
         return Icons.access_time;
       case 'accepted':
         return Icons.check_circle_outline;
+      case 'in_progress':
+        return Icons.sync;
       case 'completed':
         return Icons.check_circle;
       case 'rejected':
