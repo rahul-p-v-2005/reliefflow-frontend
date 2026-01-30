@@ -1,11 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:reliefflow_frontend_public_app/firebase_options.dart';
 import 'package:reliefflow_frontend_public_app/screens/splash_screen.dart';
 import 'package:reliefflow_frontend_public_app/services/fcm_service.dart';
 import 'package:reliefflow_frontend_public_app/services/notification_router.dart';
+import 'package:reliefflow_frontend_public_app/theme/app_theme.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -64,21 +64,11 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'ReliefFlow',
-      theme: _buildTheme(Brightness.light),
+      theme: AppTheme.lightTheme,
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
       restorationScopeId:
           'reliefflow_app', // Enable state restoration for activity recreation
     );
   }
-}
-
-ThemeData _buildTheme(Brightness brightness) {
-  final base = ThemeData(
-    brightness: brightness,
-    primaryColor: Color(0xFF1E88E5),
-  );
-  return base.copyWith(
-    textTheme: GoogleFonts.poppinsTextTheme(base.textTheme),
-  );
 }

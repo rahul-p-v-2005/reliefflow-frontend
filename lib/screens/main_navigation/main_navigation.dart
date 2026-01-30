@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/account_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/tips/tips_screen.dart';
@@ -10,6 +9,7 @@ import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notif
 import 'package:reliefflow_frontend_public_app/screens/home/home_screen.dart';
 import 'package:reliefflow_frontend_public_app/services/auth_service.dart';
 import 'package:reliefflow_frontend_public_app/services/fcm_service.dart';
+import 'package:reliefflow_frontend_public_app/theme/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,14 +19,28 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  late PersistentTabController _controller;
+  int _currentIndex = 0;
+  late PageController _pageController;
   bool _fcmCallbacksSetup = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = PersistentTabController(initialIndex: 0);
+    _pageController = PageController();
   }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  final List<Widget> _pages = [
+    const HomeScreen(),
+    const RequestListScreen(),
+    const TipsScreen(),
+    const AccountPage(),
+  ];
 
   /// Set up FCM callbacks to refresh notifications when push arrives
   void _setupFcmCallbacks(BuildContext context) {
@@ -39,35 +53,6 @@ class _MainNavigationState extends State<MainNavigation> {
         context.read<NotificationCubit>().silentRefresh();
       }
     };
-  }
-
-  List<PersistentBottomNavBarItem> _navBarsItems() {
-    return [
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.home),
-        title: "Home",
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.request_page),
-        title: 'Requests',
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.volunteer_activism),
-        title: "Tips",
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.person),
-        title: "Profile",
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-      ),
-    ];
   }
 
   @override
@@ -116,130 +101,123 @@ class _MainNavigationState extends State<MainNavigation> {
                 },
               ),
             ],
-            child: PersistentTabView.custom(
-              builderContext,
-              controller: _controller,
-              itemCount: _navBarsItems().length,
-              screens: [
-                CustomNavBarScreen(screen: const HomeScreen()),
-                CustomNavBarScreen(screen: const RequestListScreen()),
-                CustomNavBarScreen(screen: const TipsScreen()),
-                CustomNavBarScreen(
-                  screen: const AccountPage(),
-                ), // Profile screen
-              ],
-              confineToSafeArea: true,
-              handleAndroidBackButtonPress: true,
-              stateManagement: true,
-              hideNavigationBarWhenKeyboardAppears: true,
-              customWidget: CustomNavBar(
-                items: _navBarsItems(),
-                selectedIndex: _controller.index,
-                onItemSelected: (index) {
-                  setState(() {
-                    _controller.index = index;
-                  });
-                },
+            child: Scaffold(
+              extendBody: true,
+              body: Container(
+                decoration: BoxDecoration(
+                  gradient: AppTheme.backgroundGradient,
+                ),
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  children: _pages,
+                ),
               ),
-              backgroundColor: Colors.white,
+              bottomNavigationBar: Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: BottomNavigationBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    type: BottomNavigationBarType.fixed,
+                    selectedItemColor: AppTheme.primaryColor,
+                    unselectedItemColor: AppTheme.textMuted,
+                    currentIndex: _currentIndex,
+                    selectedLabelStyle: AppTheme.mainFont(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: AppTheme.mainFont(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    onTap: (index) {
+                      setState(() => _currentIndex = index);
+                      _pageController.jumpToPage(index);
+                    },
+                    items: [
+                      _buildNavItem(
+                        Icons.home_rounded,
+                        Icons.home_outlined,
+                        'Home',
+                        0,
+                      ),
+                      _buildNavItem(
+                        Icons.description_rounded,
+                        Icons.description_outlined,
+                        'Requests',
+                        1,
+                      ),
+                      _buildNavItem(
+                        Icons.volunteer_activism_rounded,
+                        Icons.volunteer_activism_outlined,
+                        'Tips',
+                        2,
+                      ),
+                      _buildNavItem(
+                        Icons.person_rounded,
+                        Icons.person_outline_rounded,
+                        'Profile',
+                        3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           );
         },
       ),
     );
   }
-}
 
-/// Custom Navigation Bar without StarMenu embedded
-class CustomNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final List<PersistentBottomNavBarItem> items;
-  final ValueChanged<int> onItemSelected;
-
-  const CustomNavBar({
-    super.key,
-    required this.selectedIndex,
-    required this.items,
-    required this.onItemSelected,
-  });
-
-  Widget _buildNavItem(
-    PersistentBottomNavBarItem item,
-    bool isSelected,
+  BottomNavigationBarItem _buildNavItem(
+    IconData selectedIcon,
+    IconData unselectedIcon,
+    String label,
     int index,
   ) {
-    // Regular nav items
-    return Container(
-      alignment: Alignment.center,
-      height: 60.0,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: IconTheme(
-              data: IconThemeData(
-                size: 26.0,
-                color: isSelected
-                    ? item.activeColorPrimary
-                    : item.inactiveColorPrimary ?? item.activeColorPrimary,
-              ),
-              child: item.icon,
-            ),
-          ),
-          if (item.title != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 5.0),
-              child: Material(
-                type: MaterialType.transparency,
-                child: FittedBox(
-                  child: Text(
-                    item.title!,
-                    style: TextStyle(
-                      color: isSelected
-                          ? item.activeColorPrimary
-                          : item.inactiveColorPrimary,
-                      fontWeight: FontWeight.w400,
-                      fontSize: 12.0,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 60.0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.asMap().entries.map((entry) {
-              int index = entry.key;
-              PersistentBottomNavBarItem item = entry.value;
-              return Flexible(
-                child: GestureDetector(
-                  onTap: () => onItemSelected(index),
-                  child: _buildNavItem(
-                    item,
-                    selectedIndex == index,
-                    index,
-                  ),
-                ),
-              );
-            }).toList(),
+    final isSelected = _currentIndex == index;
+    return BottomNavigationBarItem(
+      icon: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primaryColor.withOpacity(0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(scale: animation, child: child);
+          },
+          child: Icon(
+            isSelected ? selectedIcon : unselectedIcon,
+            key: ValueKey<bool>(isSelected),
+            size: 24,
+            color: isSelected ? AppTheme.primaryColor : AppTheme.textMuted,
           ),
         ),
       ),
+      label: label,
     );
   }
 }
