@@ -1,7 +1,9 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
 
@@ -18,6 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? address;
   String? phoneNumber;
   String? _serverImagePath;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -31,15 +34,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   bool get _hasProfileImage =>
-      _serverImagePath != null && _serverImagePath!.isNotEmpty;
+      _selectedImage != null ||
+      (_serverImagePath != null && _serverImagePath!.isNotEmpty);
 
-  /// Get the profile image from server
+  /// Get the profile image (local selection takes priority over server image)
   ImageProvider? _getProfileImage() {
+    // Priority 1: User just picked a new image from gallery
+    if (_selectedImage != null) {
+      return FileImage(_selectedImage!);
+    }
+    // Priority 2: User has an image saved on the server
     if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
       final cleanPath = _serverImagePath!.replaceAll('\\', '/');
       return NetworkImage('$kImageUrl/$cleanPath');
     }
     return null;
+  }
+
+  /// Function to pick image from gallery
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
   }
 
   /// Preview the profile image in an enlarged dialog
@@ -224,63 +245,117 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             onTap: _hasProfileImage ? _previewImage : null,
             child: Hero(
               tag: 'profile-image-edit',
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF1E88E5),
-                    width: 2.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1E88E5).withOpacity(0.15),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: _hasProfileImage
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(40),
-                        child: Image.network(
-                          '$kImageUrl/${_serverImagePath!.replaceAll('\\', '/')}',
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildDefaultAvatar(),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const SizedBox(
-                              width: 72,
-                              height: 72,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF1E88E5),
-                                ),
-                              ),
-                            );
-                          },
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF1E88E5),
+                        width: 2.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E88E5).withOpacity(0.15),
+                          blurRadius: 8,
+                          spreadRadius: 1,
                         ),
-                      )
-                    : _buildDefaultAvatar(),
+                      ],
+                    ),
+                    child: _buildProfileImage(),
+                  ),
+                  // Camera Button for editing
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF1E88E5),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Color(0xFF1E88E5),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          if (_hasProfileImage) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Tap to view photo',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[500],
-              ),
+          const SizedBox(height: 8),
+          Text(
+            _hasProfileImage ? 'Tap to view photo' : 'Tap camera to add photo',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[500],
             ),
-          ],
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildProfileImage() {
+    // Priority 1: User just picked a local image
+    if (_selectedImage != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: Image.file(
+          _selectedImage!,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // Priority 2: Server has an image
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: Image.network(
+          '$kImageUrl/$cleanPath',
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const SizedBox(
+              width: 72,
+              height: 72,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF1E88E5),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Priority 3: Default avatar
+    return _buildDefaultAvatar();
   }
 
   Widget _buildDefaultAvatar() {
@@ -565,6 +640,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       email: email!,
       address: address!,
       phoneNumber: phoneNumber!,
+      profileImage: _selectedImage,
     );
   }
 }
