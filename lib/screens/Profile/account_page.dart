@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/change_password_page.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
@@ -18,25 +15,8 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  File? _selectedImage;
-
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-    }
-  }
-
-  /// Get the profile image - prioritize local selection, then server image
+  /// Get the profile image from server
   ImageProvider? _getProfileImage(String? serverImagePath) {
-    if (_selectedImage != null) {
-      return FileImage(_selectedImage!);
-    }
-
     if (serverImagePath != null && serverImagePath.isNotEmpty) {
       final cleanPath = serverImagePath.replaceAll('\\', '/');
       return NetworkImage('$kImageUrl/$cleanPath');
@@ -46,8 +26,45 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   bool _hasProfileImage(String? serverImagePath) {
-    return _selectedImage != null ||
-        (serverImagePath != null && serverImagePath.isNotEmpty);
+    return serverImagePath != null && serverImagePath.isNotEmpty;
+  }
+
+  /// Preview the profile image in an enlarged dialog
+  void _previewImage(ImageProvider imageProvider) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.85),
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: Center(
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.all(20),
+                child: Hero(
+                  tag: 'profile-image',
+                  child: Container(
+                    width: double.infinity,
+                    height: 400,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   bool val1 = true;
@@ -188,57 +205,63 @@ class _AccountPageState extends State<AccountPage> {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           child: Column(
             children: [
-              InkWell(
-                onTap: _pickImage,
-                borderRadius: BorderRadius.circular(40),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF1E88E5),
-                      width: 2.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1E88E5).withOpacity(0.15),
-                        blurRadius: 8,
-                        spreadRadius: 1,
+              GestureDetector(
+                onTap: hasImage && imageProvider != null
+                    ? () => _previewImage(imageProvider)
+                    : null,
+                child: Hero(
+                  tag: 'profile-image',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF1E88E5),
+                        width: 2.5,
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(40),
-                    child: hasImage && imageProvider != null
-                        ? Image(
-                            image: imageProvider,
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildDefaultAvatar(),
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return SizedBox(
-                                width: 72,
-                                height: 72,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: const Color(0xFF1E88E5),
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E88E5).withOpacity(0.15),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(40),
+                      child: hasImage && imageProvider != null
+                          ? Image(
+                              image: imageProvider,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildDefaultAvatar(),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return SizedBox(
+                                      width: 72,
+                                      height: 72,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: const Color(0xFF1E88E5),
+                                          value:
                                               loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        : _buildDefaultAvatar(),
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            )
+                          : _buildDefaultAvatar(),
+                    ),
                   ),
                 ),
               ),
@@ -340,19 +363,11 @@ class _AccountPageState extends State<AccountPage> {
                   if (context.read<AccountCubit>().state is! AccountLoaded) {
                     return;
                   }
-                  final result = await Navigator.of(context)
-                      .push<Map<String, dynamic>?>(
-                        MaterialPageRoute(
-                          builder: (context) => EditProfileScreen(
-                            initialImage: _selectedImage,
-                          ),
-                        ),
-                      );
-                  if (result != null && result['image'] != null) {
-                    setState(() {
-                      _selectedImage = result['image'] as File;
-                    });
-                  }
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfileScreen(),
+                    ),
+                  );
                 },
               ),
               Container(

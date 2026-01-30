@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reliefflow_frontend_public_app/models/notification_model.dart';
+import 'package:reliefflow_frontend_public_app/models/notification_payload.dart';
 import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
+import 'package:reliefflow_frontend_public_app/services/notification_router.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -37,10 +39,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
     await context.read<NotificationCubit>().refresh();
   }
 
-  void _markAsRead(NotificationModel notification) {
+  void _onNotificationTap(NotificationModel notification) {
+    // Mark as read first
     if (!notification.isRead) {
       context.read<NotificationCubit>().markAsRead(notification.id);
     }
+
+    // Navigate to detail screen based on notification type
+    final payload = NotificationPayload.fromNotificationModel(notification);
+    NotificationRouter().handleNotificationTap(payload);
   }
 
   @override
@@ -115,9 +122,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildNotificationCard(NotificationModel notification) {
     final Color accentColor = _getAccentColor(notification);
     final IconData iconData = _getIcon(notification);
+    final bool hasDetail = notification.canNavigateToDetail;
 
     return GestureDetector(
-      onTap: () => _markAsRead(notification),
+      onTap: () => _onNotificationTap(notification),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -208,6 +216,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    // Show "View details" hint for navigable notifications
+                    if (hasDetail) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            'Tap to view details',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: accentColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 10,
+                            color: accentColor,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

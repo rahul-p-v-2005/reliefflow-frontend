@@ -9,6 +9,9 @@ class NotificationModel {
   final bool isRead;
   final DateTime createdAt;
 
+  /// Extra data containing aidRequestId, donationRequestId, etc.
+  final Map<String, dynamic> data;
+
   NotificationModel({
     required this.id,
     required this.title,
@@ -18,9 +21,16 @@ class NotificationModel {
     required this.targetUserType,
     required this.isRead,
     required this.createdAt,
+    this.data = const {},
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    // Parse the data field - handle both Map and null
+    Map<String, dynamic> dataMap = {};
+    if (json['data'] != null && json['data'] is Map) {
+      dataMap = Map<String, dynamic>.from(json['data']);
+    }
+
     return NotificationModel(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
@@ -32,6 +42,7 @@ class NotificationModel {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
+      data: dataMap,
     );
   }
 
@@ -45,7 +56,22 @@ class NotificationModel {
       'targetUserType': targetUserType,
       'isRead': isRead,
       'createdAt': createdAt.toIso8601String(),
+      'data': data,
     };
+  }
+
+  /// Get the aid request ID if this is an aid request notification
+  String? get aidRequestId => data['aidRequestId'] as String?;
+
+  /// Get the donation request ID if this is a donation request notification
+  String? get donationRequestId => data['donationRequestId'] as String?;
+
+  /// Check if this notification can navigate to a detail screen
+  bool get canNavigateToDetail {
+    if (type.startsWith('aid_request_') && aidRequestId != null) return true;
+    if (type.startsWith('donation_request_') && donationRequestId != null)
+      return true;
+    return false;
   }
 
   /// Returns the notification type as a user-friendly string

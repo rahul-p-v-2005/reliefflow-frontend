@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../env.dart';
 import '../firebase_options.dart';
+import '../models/notification_payload.dart';
+import 'notification_router.dart';
 
 /// Background message handler - must be top-level function
 /// This is called when the app is in background or terminated
@@ -116,13 +118,15 @@ class FcmService {
         ?.createNotificationChannel(androidChannel);
   }
 
-  /// Handle notification tap
+  /// Handle notification tap (from local notification)
   void _onNotificationTap(NotificationResponse response) {
     developer.log('Notification tapped: ${response.payload}', name: 'FCM');
     if (response.payload != null) {
       try {
-        final data = json.decode(response.payload!);
-        onNotificationTap?.call(data);
+        final data = json.decode(response.payload!) as Map<String, dynamic>;
+        final payload = NotificationPayload.fromMap(data);
+        developer.log('Parsed payload: $payload', name: 'FCM');
+        NotificationRouter().handleNotificationTap(payload);
       } catch (e) {
         developer.log('Error parsing payload: $e', name: 'FCM');
       }
@@ -142,7 +146,7 @@ class FcmService {
       onNotificationReceived?.call();
     });
 
-    // When app is opened from notification
+    // When app is opened from notification (background state)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       developer.log(
         'App opened from notification: ${message.notification?.title}',
@@ -160,31 +164,39 @@ class FcmService {
           'App opened from terminated: ${message.notification?.title}',
           name: 'FCM',
         );
-        _handleNavigation(message);
+        _handleTerminatedNavigation(message);
       }
     });
   }
 
-  /// Handle navigation based on message payload
+  /// Handle navigation when app is opened from background
   void _handleNavigation(RemoteMessage message) {
     if (message.data.isNotEmpty) {
-      final type = message.data['type'];
-      // Use a global navigator key or a callback exposed to main.dart
-      // For now, we'll emit an event or rely on onNotificationReceived if it carries payload
-      // But typically we need a GlobalKey<NavigatorState>
-
-      developer.log('Navigation required for type: $type', name: 'FCM');
-      // For this app, since we don't have a global key setup visible here,
-      // we might need to rely on the UI layer listening to a stream,
-      // or we can try to find the context if possible (not possible in service).
-
-      // Better approach: Expose a stream of "actions"
-      onNotificationTap?.call(message.data);
+      final payload = NotificationPayload.fromMap(
+        Map<String, dynamic>.from(message.data),
+      );
+      developer.log(
+        'Handling navigation for payload: $payload',
+        name: 'FCM',
+      );
+      NotificationRouter().handleNotificationTap(payload);
     }
   }
 
-  /// Callback for navigation
-  void Function(Map<String, dynamic>)? onNotificationTap;
+  /// Handle navigation when app is opened from terminated state
+  /// This sets a pending payload that will be processed after app initialization
+  void _handleTerminatedNavigation(RemoteMessage message) {
+    if (message.data.isNotEmpty) {
+      final payload = NotificationPayload.fromMap(
+        Map<String, dynamic>.from(message.data),
+      );
+      developer.log(
+        'Setting pending navigation for terminated state: $payload',
+        name: 'FCM',
+      );
+      NotificationRouter().setPendingPayload(payload);
+    }
+  }
 
   /// Show local notification when app is in foreground
   Future<void> _showLocalNotification(RemoteMessage message) async {

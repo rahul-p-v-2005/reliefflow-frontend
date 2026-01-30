@@ -1,16 +1,12 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/profile/cubit/account_cubit.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key, this.initialImage});
-
-  final File? initialImage;
+  const EditProfileScreen({super.key});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -32,25 +28,60 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     address = userData.address;
     phoneNumber = userData.phoneNumber;
     _serverImagePath = userData.profileImage;
-    _selectedImage = widget.initialImage;
-  }
-
-  File? _selectedImage;
-
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-    }
   }
 
   bool get _hasProfileImage =>
-      _selectedImage != null ||
-      (_serverImagePath != null && _serverImagePath!.isNotEmpty);
+      _serverImagePath != null && _serverImagePath!.isNotEmpty;
+
+  /// Get the profile image from server
+  ImageProvider? _getProfileImage() {
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+      return NetworkImage('$kImageUrl/$cleanPath');
+    }
+    return null;
+  }
+
+  /// Preview the profile image in an enlarged dialog
+  void _previewImage() {
+    final imageProvider = _getProfileImage();
+    if (imageProvider == null) return;
+
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.85),
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: Center(
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.all(20),
+                child: Hero(
+                  tag: 'profile-image-edit',
+                  child: Container(
+                    width: double.infinity,
+                    height: 400,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           );
         } else if (state is AccountLoaded) {
-          Navigator.of(context).pop({
-            'user': state.user,
-            'image': _selectedImage,
-          });
+          Navigator.of(context).pop();
         }
       },
       child: Scaffold(
@@ -192,9 +220,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
+          GestureDetector(
+            onTap: _hasProfileImage ? _previewImage : null,
+            child: Hero(
+              tag: 'profile-image-edit',
+              child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -212,70 +242,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: _hasProfileImage
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(40),
-                        child: _selectedImage != null
-                            ? Image.file(
-                                _selectedImage!,
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.network(
-                                '$kImageUrl/${_serverImagePath!.replaceAll('\\', '/')}',
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    _buildDefaultAvatar(),
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const SizedBox(
-                                        width: 72,
-                                        height: 72,
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Color(0xFF1E88E5),
-                                          ),
-                                        ),
-                                      );
-                                    },
+                        child: Image.network(
+                          '$kImageUrl/${_serverImagePath!.replaceAll('\\', '/')}',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildDefaultAvatar(),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const SizedBox(
+                              width: 72,
+                              height: 72,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF1E88E5),
+                                ),
                               ),
+                            );
+                          },
+                        ),
                       )
                     : _buildDefaultAvatar(),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-                      ),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap camera to change photo',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[500],
             ),
           ),
+          if (_hasProfileImage) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tap to view photo',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -563,7 +565,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       email: email!,
       address: address!,
       phoneNumber: phoneNumber!,
-      profileImage: _selectedImage,
     );
   }
 }

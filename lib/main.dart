@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reliefflow_frontend_public_app/firebase_options.dart';
 import 'package:reliefflow_frontend_public_app/screens/splash_screen.dart';
-import 'package:reliefflow_frontend_public_app/screens/notifications/notification_screen.dart';
 import 'package:reliefflow_frontend_public_app/services/fcm_service.dart';
+import 'package:reliefflow_frontend_public_app/services/notification_router.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -23,6 +23,9 @@ void main() async {
   await FirebaseMessaging.instance.getToken().then((token) {
     print('FCM Token: $token');
   });
+
+  // Set up notification router with global navigator key
+  NotificationRouter().navigatorKey = navigatorKey;
 
   runApp(const MyApp());
 }
@@ -45,30 +48,15 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initFcm() async {
     await FcmService().initialize();
 
-    // Listen for notification taps
-    FcmService().onNotificationTap = (data) {
-      final type = data['type'];
-      print('Handling notification tap: $type');
-
-      // Navigate based on type
-      if (type == 'task_assigned') {
-        // navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => TaskDetailsScreen(taskId: data['taskId'])));
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
-        );
-      } else if (type == 'aid_request_accepted' ||
-          type == 'aid_request_submitted') {
-        // navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => AidRequestDetailsScreen(id: data['aidRequestId'])));
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
-        );
-      } else {
-        // Default to notification screen/details
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
-        );
-      }
-    };
+    // Handle any pending notification navigation (from terminated state)
+    // This is called after a delay to ensure the app is fully initialized
+    // and user has passed the splash screen/login
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Wait for splash screen to complete before handling pending navigation
+      Future.delayed(const Duration(seconds: 3), () {
+        NotificationRouter().handlePendingNavigation();
+      });
+    });
   }
 
   @override
