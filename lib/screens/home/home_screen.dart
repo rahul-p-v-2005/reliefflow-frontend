@@ -18,7 +18,6 @@ import 'package:reliefflow_frontend_public_app/screens/requests_list/requests_li
 import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/relief_centers_map.dart';
 import 'package:reliefflow_frontend_public_app/screens/views/widgets/weather_card.dart';
-import 'package:star_menu/star_menu.dart';
 import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,8 +48,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context.read<NotificationCubit>().silentRefresh();
     }
   }
-
-  final StarMenuController controller = StarMenuController();
 
   @override
   Widget build(BuildContext context) {
@@ -88,69 +85,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
       ),
-      floatingActionButton:
-          FloatingActionButton(
-            backgroundColor: Color.fromARGB(255, 30, 136, 229),
-            onPressed: () {
-              print('FloatingActionButton tapped');
-            },
-            child: Icon(
-              Icons.health_and_safety_sharp,
-              color: Colors.white,
-            ),
-          ).addStarMenu(
-            items: [
-              ActionChip(
-                label: Text(
-                  'Request Aid',
-                  style: TextStyle(color: Colors.white),
-                ),
-                backgroundColor: Colors.blue,
-                onPressed: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) {
-                        return RequestAidScreen();
-                      },
-                    ),
-                  );
-                  if (result == true) {
-                    if (context.mounted) {
-                      context.read<RequestsListCubit>().refresh();
-                    }
-                  }
-                },
-              ),
-              ActionChip(
-                backgroundColor: Colors.blue,
-                label: Text(
-                  'Request Donation',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute<dynamic>(
-                      builder: (context) => const RequestDonation(),
-                    ),
-                  );
-                  if (result == true) {
-                    if (context.mounted) {
-                      context.read<RequestsListCubit>().refresh();
-                    }
-                  }
-                },
-              ),
-            ],
-            params: StarMenuParameters.arc(
-              ArcType.quarterTopLeft,
-              radiusY: 50,
-              radiusX: 100,
-            ),
-            controller: controller,
-            onItemTapped: (index, controller) {
-              controller.closeMenu?.call();
-            },
-          ),
     );
   }
 }

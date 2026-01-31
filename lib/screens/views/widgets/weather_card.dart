@@ -53,7 +53,19 @@ Future<Position> _determinePosition() async {
 
   // When we reach here, permissions are granted and we can
   // continue accessing the position of the device.
-  return await Geolocator.getCurrentPosition();
+
+  // First try to get the last known position (instant, cached)
+  final lastKnown = await Geolocator.getLastKnownPosition();
+  if (lastKnown != null) {
+    return lastKnown;
+  }
+
+  // If no cached position, get current position using network-based location
+  return await Geolocator.getCurrentPosition(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.lowest,
+    ),
+  );
 }
 
 class WeatherCard extends StatefulWidget {
@@ -64,12 +76,21 @@ class WeatherCard extends StatefulWidget {
 }
 
 class _WeatherCardState extends State<WeatherCard> with WidgetsBindingObserver {
-  int _refreshKey = 0;
+  Position? _cachedPosition;
+  Weather? _cachedWeather;
+  List<Weather>? _cachedForecast;
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  String? _errorMessage;
+  bool _isServiceDisabled = false;
+
+  final WeatherFactory _wf = WeatherFactory(openWeatherApiKey);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadWeatherData();
   }
 
   @override
@@ -82,107 +103,431 @@ class _WeatherCardState extends State<WeatherCard> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Auto-refresh when app resumes (user returns from settings)
     if (state == AppLifecycleState.resumed) {
+      _refreshWeatherData();
+    }
+  }
+
+  Future<void> _loadWeatherData() async {
+    try {
+      final position = await _determinePosition();
+
+      // Fetch weather and forecast in parallel
+      final results = await Future.wait([
+        _wf.currentWeatherByLocation(position.latitude, position.longitude),
+        _wf.fiveDayForecastByLocation(position.latitude, position.longitude),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _cachedPosition = position;
+          _cachedWeather = results[0] as Weather;
+          _cachedForecast = results[1] as List<Weather>;
+          _isLoading = false;
+          _isRefreshing = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'An error occurred';
+        bool isServiceDisabled = false;
+
+        try {
+          final errorRecord = e as ({String message, String code});
+          errorMessage = errorRecord.message;
+          isServiceDisabled = errorRecord.code == 'DISABLED';
+        } catch (_) {
+          errorMessage = e.toString();
+        }
+
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+          // Only set error if we don't have cached data
+          if (_cachedWeather == null) {
+            _errorMessage = errorMessage;
+            _isServiceDisabled = isServiceDisabled;
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshWeatherData() async {
+    if (_isRefreshing) return;
+
+    // If we have cached data, show refresh indicator instead of skeleton
+    if (_cachedWeather != null) {
       setState(() {
-        _refreshKey++;
+        _isRefreshing = true;
       });
     }
+
+    await _loadWeatherData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      key: ValueKey(_refreshKey),
-      future: _determinePosition(),
-      builder: (context, snapshot) {
-        // Checking if future is resolved
-        if (snapshot.connectionState == ConnectionState.done) {
-          // If we got an error
-          if (snapshot.hasError || !snapshot.hasData) {
-            final error = snapshot.error;
-            String errorMessage = 'An error occurred';
-            bool isServiceDisabled = false;
+    // Show skeleton while initial loading
+    if (_isLoading && _cachedWeather == null) {
+      return const _WeatherCardSkeleton();
+    }
 
-            // Check if error is a record with message and code
-            if (error != null) {
-              try {
-                final errorRecord = error as ({String message, String code});
-                errorMessage = errorRecord.message;
-                isServiceDisabled = errorRecord.code == 'DISABLED';
-              } catch (_) {
-                errorMessage = error.toString();
-              }
-            }
+    // Show error card if no cached data and there's an error
+    if (_errorMessage != null && _cachedWeather == null) {
+      return _WeatherErrorCard(
+        message: _errorMessage!,
+        showRetry: !_isServiceDisabled,
+        showOpenSettings: _isServiceDisabled,
+        onRetry: () => _loadWeatherData(),
+      );
+    }
 
-            return _WeatherErrorCard(
-              message: errorMessage,
-              showRetry: !isServiceDisabled,
-              showOpenSettings: isServiceDisabled,
-              onRetry: () => setState(() {}),
-            );
-          } else if (snapshot.hasData) {
-            // if we got our data
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF3B82F6),
-                    Color(0xFF1D4ED8),
-                  ],
+    // Show weather card with data
+    if (_cachedWeather != null) {
+      return Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF3B82F6),
+                  Color(0xFF1D4ED8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Current Weather
+                _CurrentWeatherContent(weather: _cachedWeather!),
+                const SizedBox(height: 8),
+                // Forecast Row
+                if (_cachedForecast != null)
+                  _FiveDayForecastContent(forecast: _cachedForecast!),
+              ],
+            ),
+          ),
+          // Refresh indicator overlay
+          if (_isRefreshing)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
                   ),
-                ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+        ],
+      );
+    }
+
+    // Fallback skeleton
+    return const _WeatherCardSkeleton();
+  }
+}
+
+/// Skeleton loader for weather card
+class _WeatherCardSkeleton extends StatefulWidget {
+  const _WeatherCardSkeleton();
+
+  @override
+  State<_WeatherCardSkeleton> createState() => _WeatherCardSkeletonState();
+}
+
+class _WeatherCardSkeletonState extends State<_WeatherCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 0.6).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF3B82F6).withOpacity(_animation.value + 0.4),
+                Color(0xFF1D4ED8).withOpacity(_animation.value + 0.4),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row skeleton
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Top Section
-                  _CurrentWeatherDetails(
-                    lat: snapshot.data!.latitude,
-                    lon: snapshot.data!.longitude,
+                  _SkeletonBox(
+                    width: 100,
+                    height: 20,
+                    opacity: _animation.value,
                   ),
-
-                  // const SizedBox(height: 24),
-                  // Container(
-                  //   height: 1,
-                  //   color: Colors.white.withOpacity(0.2),
-                  // ),
-                  const SizedBox(height: 8),
-
-                  // Forecast Row
-                  _FiveDayForecastWidget(
-                    lat: snapshot.data!.latitude,
-                    lon: snapshot.data!.longitude,
+                  _SkeletonBox(
+                    width: 44,
+                    height: 44,
+                    opacity: _animation.value,
+                    isCircle: true,
                   ),
                 ],
               ),
-            );
-          }
-        }
-        return SizedBox();
+              const SizedBox(height: 8),
+              // Temperature skeleton
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _SkeletonBox(
+                    width: 80,
+                    height: 48,
+                    opacity: _animation.value,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _SkeletonBox(
+                        width: 80,
+                        height: 18,
+                        opacity: _animation.value,
+                      ),
+                      const SizedBox(height: 4),
+                      _SkeletonBox(
+                        width: 100,
+                        height: 12,
+                        opacity: _animation.value,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Forecast row skeleton
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(
+                  5,
+                  (index) => Column(
+                    children: [
+                      _SkeletonBox(
+                        width: 40,
+                        height: 11,
+                        opacity: _animation.value,
+                      ),
+                      const SizedBox(height: 4),
+                      _SkeletonBox(
+                        width: 40,
+                        height: 11,
+                        opacity: _animation.value,
+                      ),
+                      const SizedBox(height: 4),
+                      _SkeletonBox(
+                        width: 44,
+                        height: 44,
+                        opacity: _animation.value,
+                        isCircle: true,
+                      ),
+                      const SizedBox(height: 4),
+                      _SkeletonBox(
+                        width: 30,
+                        height: 14,
+                        opacity: _animation.value,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 }
 
-class RetryButton extends StatelessWidget {
-  final VoidCallback onPressed;
+class _SkeletonBox extends StatelessWidget {
+  final double width;
+  final double height;
+  final double opacity;
+  final bool isCircle;
 
-  const RetryButton({super.key, required this.onPressed});
+  const _SkeletonBox({
+    required this.width,
+    required this.height,
+    required this.opacity,
+    this.isCircle = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      child: const Text('Retry'),
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(opacity),
+        borderRadius: isCircle ? null : BorderRadius.circular(4),
+        shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+      ),
+    );
+  }
+}
+
+/// Current weather content widget (no FutureBuilder, just displays data)
+class _CurrentWeatherContent extends StatelessWidget {
+  final Weather weather;
+
+  const _CurrentWeatherContent({required this.weather});
+
+  @override
+  Widget build(BuildContext context) {
+    final weatherLocation = weather.areaName;
+    final temp = weather.temperature?.celsius?.toInt();
+    final feelsLike = weather.tempFeelsLike;
+    final weatherDescription = weather.weatherDescription;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  weatherLocation ?? 'N/A',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Image.network(
+                _getWeatherIconUrl(weather.weatherIcon ?? ''),
+                width: 44,
+                height: 44,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Icon(
+                    Icons.cloud,
+                    size: 44,
+                    color: Colors.white70,
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.cloud,
+                  size: 44,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${(temp ?? 0).toString()}°',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    height: 1,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  weatherDescription ?? '',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  "Feels like ${(feelsLike?.celsius ?? 0).toStringAsFixed(0)}°",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFBFDBFE),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Five day forecast content widget (no FutureBuilder, just displays data)
+class _FiveDayForecastContent extends StatelessWidget {
+  final List<Weather> forecast;
+
+  const _FiveDayForecastContent({required this.forecast});
+
+  @override
+  Widget build(BuildContext context) {
+    final next5 = forecast.take(5).toList();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: next5.map((e) => _ForecastItem(weather: e)).toList(),
     );
   }
 }
@@ -240,14 +585,14 @@ class _WeatherErrorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Typing animation text
-          _TypewriterText(
-            text: message,
+          Text(
+            message,
             style: const TextStyle(
               fontSize: 14,
               color: Colors.white,
               height: 1.4,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           if (showOpenSettings)
@@ -286,319 +631,6 @@ class _WeatherErrorCard extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Typewriter text animation widget
-class _TypewriterText extends StatefulWidget {
-  final String text;
-  final TextStyle? style;
-
-  const _TypewriterText({
-    required this.text,
-    this.style,
-  });
-
-  @override
-  State<_TypewriterText> createState() => _TypewriterTextState();
-}
-
-class _TypewriterTextState extends State<_TypewriterText>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<int> _characterCount;
-  String _displayedText = '';
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      duration: Duration(milliseconds: widget.text.length * 30),
-      vsync: this,
-    );
-
-    _characterCount =
-        IntTween(
-          begin: 0,
-          end: widget.text.length,
-        ).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOut,
-          ),
-        );
-
-    _characterCount.addListener(() {
-      setState(() {
-        _displayedText = widget.text.substring(0, _characterCount.value);
-      });
-    });
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _displayedText,
-      style: widget.style,
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
-class _CurrentWeatherDetails extends StatefulWidget {
-  const _CurrentWeatherDetails({
-    required this.lat,
-    required this.lon,
-  });
-
-  final double lat;
-  final double lon;
-
-  @override
-  State<_CurrentWeatherDetails> createState() => _CurrentWeatherDetailsState();
-}
-
-class _CurrentWeatherDetailsState extends State<_CurrentWeatherDetails> {
-  final WeatherFactory wf = WeatherFactory(openWeatherApiKey);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: wf.currentWeatherByLocation(widget.lat, widget.lon),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              '${snapshot.error} occurred',
-              style: TextStyle(fontSize: 18),
-            ),
-          );
-        } else if (!snapshot.hasData) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        // Extracting data from snapshot object
-        final weather = snapshot.data;
-        final weatherLocation = weather?.areaName;
-        final temp = weather?.temperature?.celsius?.toInt();
-        final date = weather?.date;
-        final formattedDate = DateFormat.MMMEd().format(date ?? DateTime.now());
-        final wind = weather?.windSpeed;
-        final humidity = weather?.humidity;
-        // final visibility = weather?.;
-        final pressure = weather?.pressure;
-        final cloud = weather?.cloudiness;
-        // final icon = weather?.weatherIcon;
-        final feelsLike = weather?.tempFeelsLike;
-
-        // final iconUrl = 'https://openweathermap.org/img/wn/${icon}@2x.png';
-
-        final weatherDescription = weather?.weatherDescription;
-        // double temp=w.temperature.celcius;
-        // double celsius = snapshot.temperature.celsius;
-        return Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Text(
-                    //   "Current Location",
-                    //   style: TextStyle(
-                    //     color: Color(0xFFBFDBFE),
-                    //     fontSize: 12,
-                    //   ),
-                    // ),
-                    // SizedBox(height: 4),
-                    Text(
-                      weatherLocation ?? 'N/A',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                // Icon(
-                //   Icons.cloud,
-                //   size: 36,
-                //   color: Color(0xFFBFDBFE),
-                // ),
-                Image.network(
-                  _getWeatherIconUrl(weather?.weatherIcon ?? ''),
-                  width: 44,
-                ),
-              ],
-            ),
-
-            // const SizedBox(height: 1),
-
-            // Temperature + Condition
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${(temp ?? 0).toString()}°',
-                      style: TextStyle(
-                        fontSize: 48,
-                        height: 1,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    // SizedBox(width: 8),
-                    // Text(
-                    //   "C",
-                    //   style: TextStyle(
-                    //     fontSize: 24,
-                    //     color: Color(0xFFBFDBFE),
-                    //   ),
-                    // ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      weatherDescription ?? '',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                    // SizedBox(height: 4),
-                    Text(
-                      "Feels like ${(feelsLike?.celsius ?? 0).toStringAsFixed(2)}°F",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFBFDBFE),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            // const SizedBox(height: 24),
-
-            // Divider
-            // Container(
-            //   height: 1,
-            //   color: Colors.white.withOpacity(0.2),
-            // ),
-
-            // const SizedBox(height: 16),
-
-            // Weather Details
-            // _CurrentAtmosphere(humidity: humidity, wind: wind, cloud: cloud, pressure: pressure),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _CurrentAtmosphere extends StatelessWidget {
-  const _CurrentAtmosphere({
-    required this.humidity,
-    required this.wind,
-    required this.cloud,
-    required this.pressure,
-  });
-
-  final double? humidity;
-  final double? wind;
-  final double? cloud;
-  final double? pressure;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _WeatherDetail(
-          icon: Icons.water_drop,
-          label: "Humidity",
-          value: '${(humidity ?? 0).toString()} %',
-        ),
-        _WeatherDetail(
-          icon: Icons.air,
-          label: "Wind",
-          value: '${(wind ?? 0).toString()} mph',
-        ),
-        _WeatherDetail(
-          icon: Icons.cloud,
-          label: "Cloudiness",
-          value: '${cloud ?? 0.toString()} okta',
-        ),
-        _WeatherDetail(
-          icon: Icons.speed,
-          label: "Pressure",
-          value: '${(pressure ?? 0).toString()} mb',
-        ),
-      ],
-    );
-  }
-}
-
-class _FiveDayForecastWidget extends StatefulWidget {
-  const _FiveDayForecastWidget({
-    required this.lat,
-    required this.lon,
-  });
-
-  final double lat;
-  final double lon;
-
-  @override
-  State<_FiveDayForecastWidget> createState() => _FiveDayForecastWidgetState();
-}
-
-class _FiveDayForecastWidgetState extends State<_FiveDayForecastWidget> {
-  final WeatherFactory wf = WeatherFactory(openWeatherApiKey);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: wf.fiveDayForecastByLocation(widget.lat, widget.lon),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              '${snapshot.error} occurred',
-              style: TextStyle(fontSize: 18),
-            ),
-          );
-        } else if (!snapshot.hasData) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        final List<Weather> next5 = snapshot.data!.take(5).toList();
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: next5.map((e) {
-            return _ForecastItem(weather: e);
-          }).toList(),
-        );
-      },
     );
   }
 }
@@ -690,9 +722,28 @@ class _ForecastItem extends StatelessWidget {
         ),
 
         // const SizedBox(height: 4),
-        Image.network(
-          _getWeatherIconUrl(weather.weatherIcon ?? ''),
+        SizedBox(
           width: 44,
+          height: 44,
+          child: Image.network(
+            _getWeatherIconUrl(weather.weatherIcon ?? ''),
+            width: 44,
+            height: 44,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Icon(
+                Icons.cloud,
+                size: 44,
+                color: Colors.white70,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.cloud,
+              size: 44,
+              color: Colors.white,
+            ),
+          ),
         ),
         // const SizedBox(height: 4),
         Text(
