@@ -402,7 +402,12 @@ class _TipsScreenState extends State<TipsScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.only(
+                          left: 12,
+                          right: 12,
+                          bottom:
+                              25, // Space for floating bottom navigation bar
+                        ),
                         itemCount: filteredTips.length,
                         itemBuilder: (context, index) {
                           final tip = filteredTips[index];

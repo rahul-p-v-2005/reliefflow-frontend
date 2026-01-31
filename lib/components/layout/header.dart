@@ -59,10 +59,14 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                             size: 26,
                           ),
                           onPressed: () {
+                            final notificationCubit = context
+                                .read<NotificationCubit>();
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (context) =>
-                                    const NotificationScreen(),
+                                builder: (_) => BlocProvider.value(
+                                  value: notificationCubit,
+                                  child: const NotificationScreen(),
+                                ),
                               ),
                             );
                           },

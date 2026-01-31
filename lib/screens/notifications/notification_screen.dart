@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reliefflow_frontend_public_app/models/notification_model.dart';
-import 'package:reliefflow_frontend_public_app/models/notification_payload.dart';
 import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
 import 'package:reliefflow_frontend_public_app/services/notification_router.dart';
 
@@ -15,39 +14,42 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   Timer? _refreshTimer;
+  // Store reference to cubit to safely access in dispose()
+  late final NotificationCubit _notificationCubit;
 
   @override
   void initState() {
     super.initState();
+    // Save reference to cubit before any async operations
+    _notificationCubit = context.read<NotificationCubit>();
+
     // Load notifications when screen opens
-    context.read<NotificationCubit>().loadNotifications();
+    _notificationCubit.loadNotifications();
 
     // Set up periodic refresh every 30 seconds while on this screen
     // This acts as a fallback to ensure notifications stay updated
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      context.read<NotificationCubit>().silentRefresh();
+      _notificationCubit.silentRefresh();
     });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    // Mark all notifications as read when leaving the screen
+    // Use the saved reference instead of context.read() which is unsafe in dispose()
+    _notificationCubit.markAllAsRead();
     super.dispose();
   }
 
   Future<void> _refreshNotifications() async {
-    await context.read<NotificationCubit>().refresh();
+    await _notificationCubit.refresh();
   }
 
   void _onNotificationTap(NotificationModel notification) {
-    // Mark as read first
-    if (!notification.isRead) {
-      context.read<NotificationCubit>().markAsRead(notification.id);
-    }
-
-    // Navigate to detail screen based on notification type
-    final payload = NotificationPayload.fromNotificationModel(notification);
-    NotificationRouter().handleNotificationTap(payload);
+    // Use the in-app handler which shows appropriate UI
+    // (bottom sheet for info-only notifications, navigation for actionable ones)
+    NotificationRouter().handleInAppNotificationTap(context, notification);
   }
 
   @override

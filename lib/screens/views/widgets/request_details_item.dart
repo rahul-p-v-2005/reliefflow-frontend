@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/request_status.dart';
-import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_details_bottom_sheet.dart';
+// Note: This widget is a legacy placeholder. Use AidRequestBottomSheet.show() with an AidRequest.
+// import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_bottom_sheet.dart';
 
 class RequestDetails extends StatefulWidget {
   final IconData? icon;
@@ -54,20 +55,10 @@ class _RequestDetailsState extends State<RequestDetails> {
         ),
       ),
       onTap: () {
-        showModalBottomSheet(
-          context: (context),
-          builder: (context) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(25),
-                ),
-              ),
-              padding: EdgeInsets.all(24),
-              child: AidRequestDetailsBottomSheet(),
-            );
-          },
+        // TODO: This widget needs an AidRequest to show the bottom sheet properly.
+        // Use AidRequestBottomSheet.show(context, request) when you have the request data.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Request details not available')),
         );
       },
     );

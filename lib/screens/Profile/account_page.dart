@@ -86,7 +86,12 @@ class _AccountPageState extends State<AccountPage> {
               _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.only(
+                    left: 12,
+                    right: 12,
+                    top: 12,
+                    bottom: 25, // Space for floating bottom navigation bar
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

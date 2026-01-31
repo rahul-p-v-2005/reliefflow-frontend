@@ -5,12 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
+import 'package:reliefflow_frontend_public_app/models/notification_model.dart';
 import 'package:reliefflow_frontend_public_app/models/notification_payload.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/aid_request.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/donation_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/notifications/notification_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/notifications/cubit/notification_cubit.dart';
-import 'package:reliefflow_frontend_public_app/screens/requests_list/requests_list_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/notifications/widgets/notification_detail_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_tracking_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/donation_request/donation_request_tracking_screen.dart';
 
 /// Service for handling notification tap navigation
 ///
@@ -52,10 +55,11 @@ class NotificationRouter {
     }
   }
 
-  /// Handle notification tap - main entry point
+  /// Handle notification tap from FCM/system notification (external tap)
+  /// This is called when user taps a notification from the system tray
   Future<void> handleNotificationTap(NotificationPayload payload) async {
     developer.log(
-      'Handling notification tap: ${payload.type}',
+      'Handling notification tap (external): ${payload.type}',
       name: 'NotificationRouter',
     );
 
@@ -88,13 +92,10 @@ class NotificationRouter {
           await _navigateToDonationRequestDetail(navigator, payload);
           break;
 
-        // Alert notifications - navigate to notifications screen
+        // Alert and informational notifications - navigate to notifications screen
+        // The user can then tap the notification there to see full details
         case NotificationType.weatherAlert:
         case NotificationType.disasterAlert:
-          _navigateToNotifications(navigator);
-          break;
-
-        // Broadcast and other notifications - navigate to notifications screen
         case NotificationType.adminBroadcast:
         case NotificationType.reliefCenterUpdate:
         case NotificationType.systemNotification:
@@ -111,6 +112,158 @@ class NotificationRouter {
       );
       // Fallback to notifications screen
       _navigateToNotifications(navigator);
+    }
+  }
+
+  /// Handle notification tap from the NotificationScreen (in-app tap)
+  /// This shows appropriate details without pushing duplicate screens
+  Future<void> handleInAppNotificationTap(
+    BuildContext context,
+    NotificationModel notification,
+  ) async {
+    developer.log(
+      'Handling in-app notification tap: ${notification.type}',
+      name: 'NotificationRouter',
+    );
+
+    final type = parseNotificationType(notification.type);
+    final payload = NotificationPayload.fromNotificationModel(notification);
+
+    try {
+      switch (type) {
+        // Aid request "in progress" - show bottom sheet with volunteer info
+        // User can still navigate to tracking from there
+        case NotificationType.aidRequestInProgress:
+          NotificationDetailBottomSheet.show(context, notification);
+          break;
+
+        // Other aid request notifications - navigate to tracking screen
+        case NotificationType.aidRequestSubmitted:
+        case NotificationType.aidRequestAccepted:
+        case NotificationType.aidRequestRejected:
+        case NotificationType.aidRequestCompleted:
+          if (payload.aidRequestId != null) {
+            await _navigateToAidRequestDetailFromContext(context, payload);
+          } else {
+            // No request ID - show detail bottom sheet
+            NotificationDetailBottomSheet.show(context, notification);
+          }
+          break;
+
+        // Donation request notifications - navigate to tracking screen
+        case NotificationType.donationRequestSubmitted:
+        case NotificationType.donationRequestAccepted:
+        case NotificationType.donationRequestRejected:
+        case NotificationType.donationRequestCompleted:
+        case NotificationType.donationRequestPartiallyFulfilled:
+          if (payload.donationRequestId != null) {
+            await _navigateToDonationRequestDetailFromContext(context, payload);
+          } else {
+            // No request ID - show detail bottom sheet
+            NotificationDetailBottomSheet.show(context, notification);
+          }
+          break;
+
+        // Alert and informational notifications - show detail bottom sheet
+        // These don't have a dedicated screen, so we show full details in bottom sheet
+        case NotificationType.weatherAlert:
+        case NotificationType.disasterAlert:
+        case NotificationType.adminBroadcast:
+        case NotificationType.reliefCenterUpdate:
+        case NotificationType.systemNotification:
+        case NotificationType.unknown:
+          NotificationDetailBottomSheet.show(context, notification);
+          break;
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error handling in-app notification tap: $e',
+        name: 'NotificationRouter',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Fallback to showing detail bottom sheet (check mounted first)
+      if (context.mounted) {
+        NotificationDetailBottomSheet.show(context, notification);
+      }
+    }
+  }
+
+  /// Navigate to aid request detail using BuildContext (from notification screen)
+  Future<void> _navigateToAidRequestDetailFromContext(
+    BuildContext context,
+    NotificationPayload payload,
+  ) async {
+    final requestId = payload.aidRequestId;
+
+    if (requestId == null || requestId.isEmpty) {
+      developer.log(
+        'No aidRequestId in payload',
+        name: 'NotificationRouter',
+      );
+      return;
+    }
+
+    developer.log(
+      'Navigating to aid request from context: $requestId',
+      name: 'NotificationRouter',
+    );
+
+    // Fetch the aid request details
+    final request = await _fetchAidRequest(requestId);
+
+    if (request != null && context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AidRequestTrackingScreen(request: request),
+        ),
+      );
+    } else {
+      developer.log(
+        'Failed to fetch aid request',
+        name: 'NotificationRouter',
+      );
+    }
+  }
+
+  /// Navigate to donation request detail using BuildContext (from notification screen)
+  Future<void> _navigateToDonationRequestDetailFromContext(
+    BuildContext context,
+    NotificationPayload payload,
+  ) async {
+    final requestId = payload.donationRequestId;
+
+    if (requestId == null || requestId.isEmpty) {
+      developer.log(
+        'No donationRequestId in payload',
+        name: 'NotificationRouter',
+      );
+      return;
+    }
+
+    developer.log(
+      'Navigating to donation request from context: $requestId',
+      name: 'NotificationRouter',
+    );
+
+    // Fetch the donation request details
+    final request = await _fetchDonationRequest(requestId);
+
+    if (request != null && context.mounted) {
+      final isCash = request.donationType.toLowerCase() == 'cash';
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => DonationRequestTrackingScreen(
+            request: request,
+            isCash: isCash,
+          ),
+        ),
+      );
+    } else {
+      developer.log(
+        'Failed to fetch donation request',
+        name: 'NotificationRouter',
+      );
     }
   }
 

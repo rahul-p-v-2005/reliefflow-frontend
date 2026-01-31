@@ -117,13 +117,13 @@ class _SelectCurrentLocationScreenState
         headers: {'User-Agent': 'ReliefflowApp/1.0'},
       );
       log('Photon API status: ${response.statusCode}');
-      log(
-        'Photon API response: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
-      );
+      // log(
+      //   'Photon API response: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
+      // );
 
       if (response.statusCode == 200) {
         final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
-        log('Parsed features count: ${data.features?.length ?? 0}');
+        // log('Parsed features count: ${data.features?.length ?? 0}');
         if (mounted) {
           setState(() {
             _searchResults = data.features ?? [];

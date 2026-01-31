@@ -66,7 +66,7 @@ class AppTheme {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
   }) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.plusJakartaSans(
       textStyle: textStyle,
       color: color,
       backgroundColor: backgroundColor,

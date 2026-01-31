@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Status values matching backend models:
-/// - AidRequest: pending, accepted, rejected, completed
-/// - DonationRequest: pending, accepted, rejected, completed, partially_fulfilled
+/// - AidRequest: pending, accepted, in_progress, completed, rejected
+/// - DonationRequest: pending, accepted, in_progress, partially_fulfilled, completed, rejected
 enum RequestStatus {
   pending,
   accepted,
