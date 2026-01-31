@@ -5,15 +5,18 @@ import 'package:reliefflow_frontend_public_app/screens/requests_list/widgets/wid
 
 /// Screen that displays all user requests (aid requests and donation requests).
 /// Uses tabs for easy navigation between categories.
+///
+/// Note: This screen uses the [RequestsListCubit] provided by [MainNavigation]
+/// to share state with [HomeScreen]. This ensures both screens automatically
+/// refresh when new requests are added.
 class RequestListScreen extends StatelessWidget {
   const RequestListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => RequestsListCubit()..loadRequests(),
-      child: const _RequestListScreenBody(),
-    );
+    // Use the existing cubit from MainNavigation instead of creating a new one
+    // This ensures HomeScreen and RequestListScreen share the same state
+    return const _RequestListScreenBody();
   }
 }
 

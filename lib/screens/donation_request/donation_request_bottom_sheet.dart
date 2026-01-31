@@ -229,6 +229,12 @@ class DonationRequestBottomSheet extends StatelessWidget {
   }
 
   Widget _buildAmountSection() {
+    final fulfilled = request.fulfilledAmount ?? 0;
+    final total = request.amount ?? 0;
+    final percentage = request.fulfillmentPercentage;
+    final remaining = (total - fulfilled).clamp(0, total);
+    final hasProgress = fulfilled > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -240,26 +246,29 @@ class DonationRequestBottomSheet extends StatelessWidget {
         Row(
           children: [
             Text(
-              '₹${request.amount?.toStringAsFixed(0) ?? "0"}',
+              '₹${total.toStringAsFixed(0)}',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: _themeColor,
               ),
             ),
-            if (request.fulfilledAmount != null &&
-                request.fulfilledAmount! > 0) ...[
+            if (hasProgress) ...[
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: percentage >= 100
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '₹${request.fulfilledAmount!.toStringAsFixed(0)} fulfilled',
-                  style: const TextStyle(
-                    color: Colors.green,
+                  '${percentage.toStringAsFixed(0)}% funded',
+                  style: TextStyle(
+                    color: percentage >= 100
+                        ? Colors.green
+                        : Colors.orange[700],
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -268,6 +277,44 @@ class DonationRequestBottomSheet extends StatelessWidget {
             ],
           ],
         ),
+        // Progress bar for partially fulfilled
+        if (hasProgress) ...[
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              backgroundColor: Colors.grey.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                percentage >= 100 ? Colors.green : Colors.orange,
+              ),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '₹${fulfilled.toStringAsFixed(0)} received',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (remaining > 0)
+                Text(
+                  '₹${remaining.toStringAsFixed(0)} remaining',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+        ],
         if (request.upiNumber != null && request.upiNumber!.isNotEmpty) ...[
           const SizedBox(height: 8),
           Row(
@@ -290,20 +337,81 @@ class DonationRequestBottomSheet extends StatelessWidget {
   }
 
   Widget _buildItemsSection() {
+    final items = request.itemDetails ?? [];
+    final totalItems = items.length;
+    final fulfilledCount = items.where((item) => item.isFullyFulfilled).length;
+    final partialCount = items
+        .where((item) => item.fulfilledQty > 0 && !item.isFullyFulfilled)
+        .length;
+    final hasAnyProgress = items.any((item) => item.fulfilledQty > 0);
+    final overallPercentage = totalItems > 0
+        ? (fulfilledCount / totalItems * 100)
+        : 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Items Requested',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Items Requested',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (hasAnyProgress)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: overallPercentage >= 100
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$fulfilledCount/$totalItems complete',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: overallPercentage >= 100
+                        ? Colors.green
+                        : Colors.orange[700],
+                  ),
+                ),
+              ),
+          ],
         ),
+        // Overall progress bar
+        if (hasAnyProgress) ...[
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: overallPercentage / 100,
+              backgroundColor: Colors.grey.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                overallPercentage >= 100 ? Colors.green : Colors.orange,
+              ),
+              minHeight: 6,
+            ),
+          ),
+          if (partialCount > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              '$partialCount items partially received',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.blue[700],
+              ),
+            ),
+          ],
+        ],
         const SizedBox(height: 8),
-        if (request.itemDetails != null && request.itemDetails!.isNotEmpty)
-          ...request.itemDetails!.map((item) => _buildItemCard(item))
+        if (items.isNotEmpty)
+          ...items.map((item) => _buildItemCard(item))
         else
           const Text(
             'No items specified',
@@ -314,13 +422,37 @@ class DonationRequestBottomSheet extends StatelessWidget {
   }
 
   Widget _buildItemCard(ItemDetail item) {
+    final isFullyFulfilled = item.isFullyFulfilled;
+    final hasPartialFulfillment = item.fulfilledQty > 0 && !isFullyFulfilled;
+    final fulfillmentPercent = item.fulfillmentPercentage;
+
+    // Determine status icon and color
+    IconData statusIcon;
+    Color statusColor;
+    if (isFullyFulfilled) {
+      statusIcon = Icons.check_circle;
+      statusColor = Colors.green;
+    } else if (hasPartialFulfillment) {
+      statusIcon = Icons.pending;
+      statusColor = Colors.orange;
+    } else {
+      statusIcon = Icons.category_outlined;
+      statusColor = _themeColor;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _themeColor.withOpacity(0.05),
+        color: isFullyFulfilled
+            ? Colors.green.withOpacity(0.05)
+            : _themeColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _themeColor.withOpacity(0.2)),
+        border: Border.all(
+          color: isFullyFulfilled
+              ? Colors.green.withOpacity(0.3)
+              : _themeColor.withOpacity(0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,9 +460,9 @@ class DonationRequestBottomSheet extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.category_outlined,
+                statusIcon,
                 size: 16,
-                color: _themeColor,
+                color: statusColor,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -345,20 +477,52 @@ class DonationRequestBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _themeColor.withOpacity(0.1),
+                  color: isFullyFulfilled
+                      ? Colors.green.withOpacity(0.1)
+                      : _themeColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'Qty: ${item.quantity} ${item.unit ?? 'pieces'}',
+                  '${item.fulfilledQty}/${item.requestedQty} ${item.unit ?? 'pieces'}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _themeColor,
+                    color: isFullyFulfilled ? Colors.green : _themeColor,
                   ),
                 ),
               ),
             ],
           ),
+          // Progress bar
+          if (item.requestedQty > 0) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: fulfillmentPercent / 100,
+                backgroundColor: Colors.grey.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isFullyFulfilled
+                      ? Colors.green
+                      : hasPartialFulfillment
+                      ? Colors.orange
+                      : Colors.grey.shade400,
+                ),
+                minHeight: 4,
+              ),
+            ),
+          ],
+          // Remaining info
+          if (item.remainingQty > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${item.remainingQty} ${item.unit ?? 'pieces'} still needed',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.orange[700],
+              ),
+            ),
+          ],
           if (item.description != null && item.description!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(

@@ -224,11 +224,15 @@ class _MainNavigationState extends State<MainNavigation>
                               screen: const RequestDonation(),
                               label: 'Donation',
                               icon: Icons.card_giftcard,
+                              requestsListCubit: builderContext
+                                  .read<RequestsListCubit>(),
                             ),
                             _StarMenuItem(
                               screen: const RequestAidScreen(),
                               label: 'Aid',
                               icon: Icons.support_agent,
+                              requestsListCubit: builderContext
+                                  .read<RequestsListCubit>(),
                             ),
                           ],
                           // params: StarMenuParameters.arc(
@@ -313,11 +317,13 @@ class _StarMenuItem extends StatelessWidget {
     required this.screen,
     required this.label,
     required this.icon,
+    required this.requestsListCubit,
   });
 
   final Widget screen;
   final String label;
   final IconData icon;
+  final RequestsListCubit requestsListCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -337,9 +343,9 @@ class _StarMenuItem extends StatelessWidget {
                 ),
               );
               if (result == true) {
-                if (context.mounted) {
-                  context.read<RequestsListCubit>().refresh();
-                }
+                // Use the passed cubit reference to refresh
+                // This ensures the refresh works regardless of context
+                requestsListCubit.refresh();
               }
             },
             child: Padding(

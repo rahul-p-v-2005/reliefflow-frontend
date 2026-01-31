@@ -79,26 +79,14 @@ class RequestsListCubit extends Cubit<RequestsListState> {
         final data = json.decode(aidResponse.body);
 
         // Debug logging for aid requests
-        log('=== AID REQUESTS DEBUG (Cubit) ===');
-        log('Raw response body: ${aidResponse.body}');
-        log('Parsed data keys: ${data.keys.toList()}');
         final messageList = data['message'] as List<dynamic>? ?? [];
-        log('Number of aid requests: ${messageList.length}');
 
-        if (messageList.isNotEmpty) {
-          final firstItem = messageList.first as Map<String, dynamic>;
-          log('First aid request keys: ${firstItem.keys.toList()}');
-          log('First aid request data: $firstItem');
-          log('calamityType: ${firstItem['calamityType']}');
-          log('createdAt: ${firstItem['createdAt']}');
-          if (firstItem['calamityType'] is Map) {
-            final calType = firstItem['calamityType'] as Map;
-            log('calamityType keys: ${calType.keys.toList()}');
-            log('calamityType._id: ${calType['_id']}');
-            log('calamityType.name: ${calType['name']}');
-            log('calamityType.calamityName: ${calType['calamityName']}');
-          }
-        }
+        // if (messageList.isNotEmpty) {
+        //   final firstItem = messageList.first as Map<String, dynamic>;
+        //   // if (firstItem['calamityType'] is Map) {
+        //   //   final calType = firstItem['calamityType'] as Map;
+        //   // }
+        // }
 
         aidList = messageList
             .map((e) => AidRequest.fromJson(e as Map<String, dynamic>))

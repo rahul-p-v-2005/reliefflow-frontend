@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/models/calamity_type.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
-import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
 
@@ -331,15 +329,7 @@ class _RequestAidState extends State<RequestAidScreen> {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         _showSnackBar('Aid request submitted successfully!');
-        // Refresh the shared cubit to update home screen and requests list
-        if (mounted) {
-          try {
-            context.read<RequestsListCubit>().loadRequests();
-          } catch (e) {
-            // Cubit may not be available if navigating from outside MainNavigation
-            debugPrint('Could not refresh RequestsListCubit: $e');
-          }
-        }
+        // Return true to signal success - MainNavigation will handle the refresh
         Navigator.pop(context, true);
       } else {
         final data = json.decode(response.body);

@@ -5,6 +5,7 @@ class ItemDetail {
   final String? description;
   final String quantity;
   final String? unit;
+  final int? fulfilledQuantity;
 
   ItemDetail({
     this.id,
@@ -12,6 +13,7 @@ class ItemDetail {
     this.description,
     required this.quantity,
     this.unit,
+    this.fulfilledQuantity,
   });
 
   factory ItemDetail.fromJson(Map<String, dynamic> json) {
@@ -21,6 +23,7 @@ class ItemDetail {
       description: json['description'] as String?,
       quantity: json['quantity']?.toString() ?? '',
       unit: json['unit'] as String? ?? 'pieces',
+      fulfilledQuantity: json['fulfilledQuantity'] as int? ?? 0,
     );
   }
 
@@ -31,8 +34,27 @@ class ItemDetail {
       if (description != null) 'description': description,
       'quantity': quantity,
       'unit': unit ?? 'pieces',
+      'fulfilledQuantity': fulfilledQuantity ?? 0,
     };
   }
+
+  /// Get the requested quantity as int
+  int get requestedQty => int.tryParse(quantity) ?? 0;
+
+  /// Get the fulfilled quantity (defaults to 0)
+  int get fulfilledQty => fulfilledQuantity ?? 0;
+
+  /// Get the remaining quantity needed
+  int get remainingQty => (requestedQty - fulfilledQty).clamp(0, requestedQty);
+
+  /// Get fulfillment percentage (0-100)
+  double get fulfillmentPercentage {
+    if (requestedQty <= 0) return 0;
+    return (fulfilledQty / requestedQty * 100).clamp(0, 100);
+  }
+
+  /// Check if this item is fully fulfilled
+  bool get isFullyFulfilled => fulfilledQty >= requestedQty;
 }
 
 /// Requested user profile model (populated from userProfile ref)

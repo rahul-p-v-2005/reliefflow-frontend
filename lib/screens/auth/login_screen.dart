@@ -5,6 +5,7 @@ import 'package:http/http.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/screens/auth/signup_screen.dart';
 import 'package:reliefflow_frontend_public_app/screens/main_navigation/main_navigation.dart';
+import 'package:reliefflow_frontend_public_app/services/fcm_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -546,6 +547,9 @@ class _LoginScreenState extends State<LoginScreen> {
         // Save token locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(kTokenStorageKey, token);
+
+        // Register FCM token with backend now that user is logged in
+        await FcmService().onUserLogin();
 
         Navigator.pushAndRemoveUntil(
           context,
