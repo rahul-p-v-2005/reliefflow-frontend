@@ -118,7 +118,7 @@ class AidRequestTrackingScreen extends StatelessWidget {
             ),
             if (request.address.isNotEmpty) ...[
               const SizedBox(height: 4),
-              DetailRow('Location', request.address),
+              DetailRow('Location', request.address, maxValueLines: 3),
             ],
           ],
         ),

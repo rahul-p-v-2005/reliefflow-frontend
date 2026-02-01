@@ -28,13 +28,19 @@ class DonationRequestBottomSheet extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        // Constrain the modal to 90% of the screen height while keeping
+        // the existing rounded container and scrollability.
+        final height = MediaQuery.of(context).size.height * 0.9;
+        return SizedBox(
+          height: height,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: DonationRequestBottomSheet(request: request, isCash: isCash),
           ),
-          padding: const EdgeInsets.all(24),
-          child: DonationRequestBottomSheet(request: request, isCash: isCash),
         );
       },
     );
@@ -44,49 +50,51 @@ class DonationRequestBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = StatusUtils.getStatusColor(request.status);
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header Row
-          _buildHeader(context),
-          const SizedBox(height: 12),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header Row
+            _buildHeader(context),
+            const SizedBox(height: 12),
 
-          // Status & Priority badges
-          Row(
-            children: [
-              StatusBadgeLarge(status: request.status, color: statusColor),
-              const SizedBox(width: 8),
-              PriorityBadge(priority: request.priority),
-            ],
-          ),
-          const SizedBox(height: 16),
+            // Status & Priority badges
+            Row(
+              children: [
+                StatusBadgeLarge(status: request.status, color: statusColor),
+                const SizedBox(width: 8),
+                PriorityBadge(priority: request.priority),
+              ],
+            ),
+            const SizedBox(height: 16),
 
-          // Photo Evidence Section
-          if (request.proofImages != null && request.proofImages!.isNotEmpty)
-            _buildPhotoSection(context),
+            // Photo Evidence Section
+            if (request.proofImages != null && request.proofImages!.isNotEmpty)
+              _buildPhotoSection(context),
 
-          // Description (if available)
-          if (request.description != null && request.description!.isNotEmpty)
-            _buildDescription(),
+            // Description (if available)
+            if (request.description != null && request.description!.isNotEmpty)
+              _buildDescription(),
 
-          // Amount Section (for Cash) or Items Section (for Items)
-          if (isCash) _buildAmountSection() else _buildItemsSection(),
+            // Amount Section (for Cash) or Items Section (for Items)
+            if (isCash) _buildAmountSection() else _buildItemsSection(),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Address Section
-          _buildAddressSection(),
-          const SizedBox(height: 20),
+            // Address Section
+            _buildAddressSection(),
+            const SizedBox(height: 20),
 
-          // Dates Row
-          _buildDatesRow(),
-          const SizedBox(height: 24),
+            // Dates Row
+            _buildDatesRow(),
+            const SizedBox(height: 24),
 
-          // Track Request Button
-          _buildTrackButton(context),
-        ],
+            // Track Request Button
+            _buildTrackButton(context),
+          ],
+        ),
       ),
     );
   }

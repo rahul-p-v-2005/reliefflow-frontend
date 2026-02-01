@@ -159,7 +159,11 @@ class DonationRequestTrackingScreen extends StatelessWidget {
             if (request.address != null &&
                 request.address?.addressLine1 != null) ...[
               const SizedBox(height: 2),
-              DetailRow('Location', request.address!.addressLine1),
+              DetailRow(
+                'Location',
+                request.address!.addressLine1,
+                maxValueLines: 3,
+              ),
             ],
           ],
         ),
