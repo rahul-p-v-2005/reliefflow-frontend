@@ -214,15 +214,15 @@ class _AidRequestListItem extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'ID: ${request.id.length > 8 ? '${request.id.substring(0, 8)}...' : request.id}',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
+                    // const SizedBox(height: 2),
+                    // Text(
+                    //   'ID: ${request.id.length > 8 ? '${request.id.substring(0, 8)}...' : request.id}',
+                    //   style: TextStyle(
+                    //     color: Colors.grey[400],
+                    //     fontWeight: FontWeight.bold,
+                    //     fontSize: 11,
+                    //   ),
+                    // ),
                     const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

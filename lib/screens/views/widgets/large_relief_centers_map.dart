@@ -109,9 +109,13 @@ class _LargeReliefCentersMapState extends State<LargeReliefCentersMap> {
   }
 
   Future<void> _launchMaps(double lat, double lon, String? name) async {
+    // final googleMapsUrl = Uri.parse(
+    //   'https://www.google.com/maps/search/?api=1&query=$lat,$lon${name != null ? '($name)' : ''}',
+    // );
     final googleMapsUrl = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lon${name != null ? '($name)' : ''}',
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lon',
     );
+    print(googleMapsUrl);
     if (await canLaunchUrl(googleMapsUrl)) {
       await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
     } else {

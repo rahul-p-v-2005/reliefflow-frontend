@@ -99,7 +99,7 @@ class _AccountPageState extends State<AccountPage> {
                       const SizedBox(height: 14),
                       _buildAccountDetailsSection(),
                       const SizedBox(height: 14),
-                      _buildSettingsSection(),
+                      // _buildSettingsSection(),
                       const SizedBox(height: 16),
                       _buildLogoutButton(),
                     ],
@@ -365,12 +365,16 @@ class _AccountPageState extends State<AccountPage> {
                 subtitle: 'Update your personal information',
                 onTap: () async {
                   if (!mounted) return;
-                  if (context.read<AccountCubit>().state is! AccountLoaded) {
+                  final accountCubit = context.read<AccountCubit>();
+                  if (accountCubit.state is! AccountLoaded) {
                     return;
                   }
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => const EditProfileScreen(),
+                      builder: (_) => BlocProvider.value(
+                        value: accountCubit,
+                        child: const EditProfileScreen(),
+                      ),
                     ),
                   );
                 },

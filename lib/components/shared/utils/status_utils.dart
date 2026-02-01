@@ -55,13 +55,13 @@ class StatusUtils {
       case 'pending':
         return 'Pending';
       case 'accepted':
-        return 'Accepted';
+        return 'Accepted by admin';
       case 'in_progress':
         return 'In Progress';
       case 'completed':
         return 'Completed';
       case 'rejected':
-        return 'Rejected';
+        return 'Rejected by admin';
       case 'partially_fulfilled':
         return 'Partially Fulfilled';
       default:
