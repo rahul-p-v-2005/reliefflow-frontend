@@ -357,36 +357,45 @@ class _TipDetailScreenState extends State<TipDetailScreen>
 
           // Tab Content with Emergency Contacts inside
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTipsListWithContacts(tipDetail!.beforeTips, Colors.blue),
-                _buildTipsListWithContacts(
-                  tipDetail!.duringTips,
-                  Colors.orange,
-                ),
-                _buildTipsListWithContacts(tipDetail!.afterTips, Colors.green),
-              ],
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTipsListWithContacts(
+                    tipDetail!.beforeTips,
+                    Colors.blue,
+                  ),
+                  _buildTipsListWithContacts(
+                    tipDetail!.duringTips,
+                    Colors.orange,
+                  ),
+                  _buildTipsListWithContacts(
+                    tipDetail!.afterTips,
+                    Colors.green,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => QuizIntroScreen(
-                tipSlug: widget.tipSlug,
-                tipTitle: tipDetail!.title,
-              ),
-            ),
-          );
-        },
-        label: Text('Take Quiz'),
-        icon: Icon(Icons.quiz),
-        backgroundColor: color,
-      ),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () {
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(
+      //         builder: (context) => QuizIntroScreen(
+      //           tipSlug: widget.tipSlug,
+      //           tipTitle: tipDetail!.title,
+      //         ),
+      //       ),
+      //     );
+      //   },
+      //   label: Text('Take Quiz'),
+      //   icon: Icon(Icons.quiz),
+      //   backgroundColor: color,
+      // ),
     );
   }
 
