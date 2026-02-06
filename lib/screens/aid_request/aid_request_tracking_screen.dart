@@ -100,10 +100,10 @@ class AidRequestTrackingScreen extends StatelessWidget {
             const Divider(),
             const SizedBox(height: 8),
             DetailRow('Type', request.calamityTypeName ?? 'Aid Request'),
-            DetailRow(
-              'Priority',
-              '${request.priority[0].toUpperCase()}${request.priority.substring(1)}',
-            ),
+            // DetailRow(
+            //   'Priority',
+            //   '${request.priority[0].toUpperCase()}${request.priority.substring(1)}',
+            // ),
             DetailRow(
               'Submitted On',
               request.createdAt != null

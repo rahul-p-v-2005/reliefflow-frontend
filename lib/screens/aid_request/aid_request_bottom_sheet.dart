@@ -132,7 +132,7 @@ class AidRequestBottomSheet extends StatelessWidget {
       children: [
         StatusBadgeLarge(status: request.status, color: statusColor),
         const SizedBox(width: 8),
-        PriorityBadge(priority: request.priority),
+        // PriorityBadge(priority: request.priority),
       ],
     );
   }
@@ -361,7 +361,7 @@ class AidRequestBottomSheet extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Track Requestttt',
+          'Track Request',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
