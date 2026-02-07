@@ -551,12 +551,21 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                       padding: EdgeInsets.only(bottom: 6),
                       child: InkWell(
                         onTap: () async {
-                          final Uri videoUri = Uri.parse(video.url);
-                          if (await canLaunchUrl(videoUri)) {
+                          try {
+                            final Uri videoUri = Uri.parse(video.url);
                             await launchUrl(
                               videoUri,
-                              mode: LaunchMode.externalApplication,
+                              mode: LaunchMode.platformDefault,
                             );
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Could not open video: $e'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           }
                         },
                         child: Container(
