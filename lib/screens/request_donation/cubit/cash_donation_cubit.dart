@@ -80,7 +80,7 @@ class CashDonationCubit extends Cubit<CashDonationState> {
       final url = '$kBaseUrl/public/donation/request/add';
       log('=== DONATION REQUEST DEBUG ===');
       log('URL: $url');
-      log('Token: ${token?.substring(0, 20)}...');
+      log('Token: ${token.substring(0, 20)}...');
 
       final request = http.MultipartRequest(
         'POST',

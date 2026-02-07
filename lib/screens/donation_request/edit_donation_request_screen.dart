@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/donation_request.dart';
@@ -40,7 +43,9 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
   String _priority = 'medium';
   Feature? _selectedLocationFeature;
   DateTime? _deadline;
-  List<String> _proofImages = [];
+  List<String> _proofImages = []; // Existing images from server
+  final List<File> _newImages = []; // New images to upload
+  final ImagePicker _imagePicker = ImagePicker();
 
   // For item-type donations
   List<EditableItem> _items = [];
@@ -158,90 +163,201 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
         return;
       }
 
-      // Build the update body
-      final body = <String, dynamic>{
-        'title': _titleController.text,
-        'description': _descriptionController.text,
-        'priority': _priority,
-        'donationType': widget.request.donationType,
-        if (_deadline != null) 'deadline': _deadline!.toIso8601String(),
-      };
+      // Create multipart request if there are new images
+      final hasNewImages = _newImages.isNotEmpty;
 
-      if (isCash) {
-        body['amount'] = double.tryParse(_amountController.text) ?? 0;
-        body['upiNumber'] = _upiController.text;
-      } else {
-        // Add items for item-type donations
-        body['itemDetails'] = _items
-            .map(
-              (item) => {
-                'category': item.category,
-                'description': item.description,
-                'quantity': item.quantity,
-                'unit': item.unit,
-              },
-            )
-            .toList();
-      }
+      http.Response response;
 
-      // Build address if provided
-      if (_addressController.text.isNotEmpty) {
-        final addressParts = _addressController.text.split(',');
-        body['address'] = {
-          'addressLine1': addressParts.isNotEmpty ? addressParts[0].trim() : '',
-          'addressLine2': addressParts.length > 1 ? addressParts[1].trim() : '',
-          'addressLine3': addressParts.length > 2 ? addressParts[2].trim() : '',
-          'pinCode': addressParts.length > 3
-              ? int.tryParse(
-                      addressParts[3].replaceAll(RegExp(r'[^0-9]'), ''),
-                    ) ??
-                    0
-              : 0,
-        };
+      if (hasNewImages) {
+        // Use multipart request for new images
+        final request = http.MultipartRequest(
+          'PUT',
+          Uri.parse(
+            '$kBaseUrl/public/donation/update-donation/${widget.request.id}',
+          ),
+        );
 
-        // Add location if available
-        if (_selectedLocationFeature != null) {
-          final coords = _selectedLocationFeature!.geometry?.coordinates;
-          if (coords != null && coords.length >= 2) {
-            body['location'] = {
-              'type': 'Point',
-              'coordinates': [coords[0], coords[1]],
-            };
+        request.headers['Authorization'] = 'Bearer $token';
+
+        // Add text fields
+        request.fields['title'] = _titleController.text;
+        request.fields['description'] = _descriptionController.text;
+        request.fields['priority'] = _priority;
+        request.fields['donationType'] = widget.request.donationType;
+
+        if (_deadline != null) {
+          request.fields['deadline'] = _deadline!.toIso8601String();
+        }
+
+        if (isCash) {
+          request.fields['amount'] =
+              (_amountController.text.isNotEmpty
+                      ? double.tryParse(_amountController.text)
+                      : 0)
+                  .toString();
+          request.fields['upiNumber'] = _upiController.text;
+        } else {
+          // Add items as JSON string
+          request.fields['itemDetails'] = jsonEncode(
+            _items
+                .map(
+                  (item) => {
+                    'category': item.category,
+                    'description': item.description,
+                    'quantity': item.quantity,
+                    'unit': item.unit,
+                  },
+                )
+                .toList(),
+          );
+        }
+
+        // Add existing proof images as JSON string
+        if (_proofImages.isNotEmpty) {
+          request.fields['existingProofImages'] = jsonEncode(_proofImages);
+        }
+
+        // Add address if provided
+        if (_addressController.text.isNotEmpty) {
+          final addressParts = _addressController.text.split(',');
+          request.fields['address'] = jsonEncode({
+            'addressLine1': addressParts.isNotEmpty
+                ? addressParts[0].trim()
+                : '',
+            'addressLine2': addressParts.length > 1
+                ? addressParts[1].trim()
+                : '',
+            'addressLine3': addressParts.length > 2
+                ? addressParts[2].trim()
+                : '',
+            'pinCode': addressParts.length > 3
+                ? int.tryParse(
+                        addressParts[3].replaceAll(RegExp(r'[^0-9]'), ''),
+                      ) ??
+                      0
+                : 0,
+          });
+
+          // Add location if available
+          if (_selectedLocationFeature != null) {
+            final coords = _selectedLocationFeature!.geometry?.coordinates;
+            if (coords != null && coords.length >= 2) {
+              request.fields['location'] = jsonEncode({
+                'type': 'Point',
+                'coordinates': [coords[0], coords[1]],
+              });
+            }
           }
         }
+
+        // Add new image files
+        for (var imageFile in _newImages) {
+          final mimeType = imageFile.path.toLowerCase().endsWith('.png')
+              ? 'image/png'
+              : 'image/jpeg';
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'proofImages',
+              imageFile.path,
+              contentType: MediaType('image', mimeType.split('/')[1]),
+            ),
+          );
+        }
+
+        final streamedResponse = await request.send();
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Use regular JSON request if no new images
+        final body = <String, dynamic>{
+          'title': _titleController.text,
+          'description': _descriptionController.text,
+          'priority': _priority,
+          'donationType': widget.request.donationType,
+          if (_deadline != null) 'deadline': _deadline!.toIso8601String(),
+        };
+
+        if (isCash) {
+          body['amount'] = double.tryParse(_amountController.text) ?? 0;
+          body['upiNumber'] = _upiController.text;
+        } else {
+          // Add items for item-type donations
+          body['itemDetails'] = _items
+              .map(
+                (item) => {
+                  'category': item.category,
+                  'description': item.description,
+                  'quantity': item.quantity,
+                  'unit': item.unit,
+                },
+              )
+              .toList();
+        }
+
+        // Include existing proof images
+        if (_proofImages.isNotEmpty) {
+          body['existingProofImages'] = _proofImages;
+        }
+
+        // Build address if provided
+        if (_addressController.text.isNotEmpty) {
+          final addressParts = _addressController.text.split(',');
+          body['address'] = {
+            'addressLine1': addressParts.isNotEmpty
+                ? addressParts[0].trim()
+                : '',
+            'addressLine2': addressParts.length > 1
+                ? addressParts[1].trim()
+                : '',
+            'addressLine3': addressParts.length > 2
+                ? addressParts[2].trim()
+                : '',
+            'pinCode': addressParts.length > 3
+                ? int.tryParse(
+                        addressParts[3].replaceAll(RegExp(r'[^0-9]'), ''),
+                      ) ??
+                      0
+                : 0,
+          };
+
+          // Add location if available
+          if (_selectedLocationFeature != null) {
+            final coords = _selectedLocationFeature!.geometry?.coordinates;
+            if (coords != null && coords.length >= 2) {
+              body['location'] = {
+                'type': 'Point',
+                'coordinates': [coords[0], coords[1]],
+              };
+            }
+          }
+        }
+
+        response = await http.put(
+          Uri.parse(
+            '$kBaseUrl/public/donation/update-donation/${widget.request.id}',
+          ),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        );
       }
 
-      final response = await http.put(
-        Uri.parse(
-          '$kBaseUrl/public/donation/update-donation/${widget.request.id}',
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (!mounted) return;
-
+      // Handle response
       if (response.statusCode == 200) {
         _showSnackBar('Donation request updated successfully');
-        widget.onUpdated?.call();
-        Navigator.pop(
-          context,
-          true,
-        ); // Return true to indicate successful update
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } else {
-        final data = jsonDecode(response.body);
+        final errorData = jsonDecode(response.body);
         _showSnackBar(
-          data['message'] ?? 'Failed to update request',
+          errorData['message'] ?? 'Failed to update request',
           isError: true,
         );
       }
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Network error: $e', isError: true);
-      }
+      _showSnackBar('Error: ${e.toString()}', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -366,6 +482,34 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
     }
   }
 
+  /// Pick images from gallery
+  Future<void> _pickImages() async {
+    try {
+      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
+        setState(() {
+          _newImages.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        });
+      }
+    } catch (e) {
+      _showSnackBar('Failed to pick images: $e', isError: true);
+    }
+  }
+
+  /// Remove an existing server image
+  void _removeExistingImage(int index) {
+    setState(() {
+      _proofImages.removeAt(index);
+    });
+  }
+
+  /// Remove a new image
+  void _removeNewImage(int index) {
+    setState(() {
+      _newImages.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -406,16 +550,18 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                         ] else ...[
                           _buildItemsSection(),
                           const SizedBox(height: 16),
+                          _buildLocationPicker(),
+                          const SizedBox(height: 16),
                         ],
-                        _buildPriorityDropdown(),
-                        const SizedBox(height: 16),
-                        _buildDeadlinePicker(),
-                        const SizedBox(height: 16),
+                        // _buildPriorityDropdown(),
+                        // const SizedBox(height: 16),
                         _buildProofImagesSection(),
                         const SizedBox(height: 16),
-                        _buildAddressField(),
-                        const SizedBox(height: 16),
-                        _buildLocationPicker(),
+                        _buildDeadlinePicker(),
+                        // const SizedBox(height: 16),
+                        // _buildAddressField(),
+                        // const SizedBox(height: 16),
+                        // _buildLocationPicker(),
                         const SizedBox(height: 24),
                         _buildSubmitButton(),
                       ],
@@ -830,7 +976,7 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _priority,
+            initialValue: _priority,
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
             dropdownColor: Colors.white,
             decoration: InputDecoration(
@@ -1343,7 +1489,7 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                   _buildLabel('Category'),
                   const SizedBox(height: 4),
                   DropdownButtonFormField<String>(
-                    value:
+                    initialValue:
                         _categories.any((c) => c.categoryName == item.category)
                         ? item.category
                         : _categories.first.categoryName,
@@ -1420,7 +1566,7 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                             _buildLabel('Unit'),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<String>(
-                              value: _units.contains(item.unit)
+                              initialValue: _units.contains(item.unit)
                                   ? item.unit
                                   : _units.first,
                               icon: const Icon(
@@ -1717,6 +1863,10 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
   }
 
   Widget _buildProofImagesSection() {
+    final hasExistingImages = _proofImages.isNotEmpty;
+    final hasNewImages = _newImages.isNotEmpty;
+    final hasAnyImages = hasExistingImages || hasNewImages;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1747,171 +1897,65 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                   ),
                 ),
               ),
+              // Add Images Button
+              ElevatedButton.icon(
+                onPressed: _pickImages,
+                icon: const Icon(Icons.add_photo_alternate, size: 18),
+                label: const Text('Add'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _themeColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Images uploaded during request creation',
+            hasAnyImages
+                ? 'Tap image to view full screen, tap X to remove'
+                : 'Add proof images to support your request',
             style: TextStyle(
               color: Colors.grey[600],
               fontSize: 12,
             ),
           ),
-          if (_proofImages.isNotEmpty) ...[
+          if (hasAnyImages) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _proofImages.map((url) {
-                // Build full URL using ImageUtils
-                final imageUrl = ImageUtils.getImageUrl(url);
+              children: [
+                // Display existing images from server
+                ..._proofImages.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final url = entry.value;
+                  final imageUrl = ImageUtils.getImageUrl(url);
 
-                return GestureDetector(
-                  onTap: () {
-                    // Show full screen image
-                    showDialog(
-                      context: context,
-                      builder: (context) => Dialog(
-                        backgroundColor: Colors.black,
-                        child: Stack(
-                          children: [
-                            Center(
-                              child: InteractiveViewer(
-                                child: Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[200],
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.broken_image,
-                                              color: Colors.grey[400],
-                                              size: 48,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Failed to load image',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 10,
-                              right: 10,
-                              child: IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                ),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Colors.black54,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _themeColor.withOpacity(0.3)),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              print('Error loading image: $imageUrl');
-                              print('Error details: $error');
-                              return Container(
-                                color: Colors.grey[200],
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey[400],
-                                      size: 24,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Error',
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: Colors.grey[200],
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      _themeColor,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          // Tap to view indicator
-                          Positioned(
-                            bottom: 4,
-                            right: 4,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Icon(
-                                Icons.zoom_in,
-                                color: Colors.white,
-                                size: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                  return _buildImageThumbnail(
+                    imageUrl: imageUrl,
+                    isNetworkImage: true,
+                    onRemove: () => _removeExistingImage(index),
+                    label: 'Existing',
+                  );
+                }),
+                // Display new images to be uploaded
+                ..._newImages.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final file = entry.value;
+
+                  return _buildImageThumbnail(
+                    file: file,
+                    isNetworkImage: false,
+                    onRemove: () => _removeNewImage(index),
+                    label: 'New',
+                  );
+                }),
+              ],
             ),
           ] else
             Container(
@@ -1926,13 +1970,13 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                 child: Column(
                   children: [
                     Icon(
-                      Icons.image_not_supported,
+                      Icons.add_photo_alternate,
                       size: 32,
                       color: Colors.grey[400],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'No proof images uploaded',
+                      'No images added yet',
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 12,
@@ -1943,6 +1987,210 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageThumbnail({
+    String? imageUrl,
+    File? file,
+    required bool isNetworkImage,
+    required VoidCallback onRemove,
+    required String label,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        // Show full screen image
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.black,
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    child: isNetworkImage
+                        ? Image.network(
+                            imageUrl!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey[400],
+                                        size: 48,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Failed to load image',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Image.file(
+                            file!,
+                            fit: BoxFit.contain,
+                          ),
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black54,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _themeColor.withOpacity(0.3)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Image display
+              isNetworkImage
+                  ? Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                color: Colors.grey[400],
+                                size: 24,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Error',
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                _themeColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Image.file(
+                      file!,
+                      fit: BoxFit.cover,
+                    ),
+              // Label badge
+              Positioned(
+                top: 4,
+                left: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isNetworkImage
+                        ? Colors.blue.withOpacity(0.8)
+                        : Colors.green.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              // Remove button
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
+              // Zoom indicator
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.zoom_in,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

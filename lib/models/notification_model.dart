@@ -69,8 +69,9 @@ class NotificationModel {
   /// Check if this notification can navigate to a detail screen
   bool get canNavigateToDetail {
     if (type.startsWith('aid_request_') && aidRequestId != null) return true;
-    if (type.startsWith('donation_request_') && donationRequestId != null)
+    if (type.startsWith('donation_request_') && donationRequestId != null) {
       return true;
+    }
     return false;
   }
 

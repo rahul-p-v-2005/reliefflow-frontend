@@ -213,8 +213,9 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
     if (osmValue == 'village' || type == 'village') return 'Village';
     if (osmValue == 'station') return 'Railway Station';
     if (osmValue == 'aerodrome') return 'Airport';
-    if (osmValue == 'university' || osmValue == 'college')
+    if (osmValue == 'university' || osmValue == 'college') {
       return 'Educational Institution';
+    }
     if (osmValue == 'stadium') return 'Stadium';
     if (type == 'county') return 'District';
 

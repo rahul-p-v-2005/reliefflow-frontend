@@ -540,7 +540,7 @@ class _AccountPageState extends State<AccountPage> {
                         val1 = value;
                       });
                     },
-                    activeColor: const Color(0xFF1E88E5),
+                    activeThumbColor: const Color(0xFF1E88E5),
                   ),
                 ),
               ],

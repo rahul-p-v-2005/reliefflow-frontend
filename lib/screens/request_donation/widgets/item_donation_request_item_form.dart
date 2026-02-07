@@ -119,7 +119,7 @@ class _ItemDonationRequestItemFormState
             _buildLabel("Unit"),
             SizedBox(height: 4),
             DropdownButtonFormField<String>(
-              value: selectedUnit,
+              initialValue: selectedUnit,
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
               dropdownColor: Colors.white,
               decoration: InputDecoration(

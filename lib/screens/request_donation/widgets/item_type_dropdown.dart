@@ -39,7 +39,7 @@ class _ItemTypeDropdownState extends State<ItemTypeDropdown> {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<ItemCategory>(
-      value: dropdownValue,
+      initialValue: dropdownValue,
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
       dropdownColor: Colors.white,
       decoration: InputDecoration(

@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reliefflow_frontend_public_app/models/disaster_tip.dart';
-import 'package:reliefflow_frontend_public_app/screens/quiz/quiz_intro_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:reliefflow_frontend_public_app/env.dart';
@@ -519,7 +518,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                 ),
               ),
             );
-          }).toList(),
+          }),
 
           if (tipDetail!.videos.isNotEmpty) ...[
             SizedBox(height: 8),
@@ -612,7 +611,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
@@ -682,7 +681,7 @@ class _TipDetailScreenState extends State<TipDetailScreen>
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

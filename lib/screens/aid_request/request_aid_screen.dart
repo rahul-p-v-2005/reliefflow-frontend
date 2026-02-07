@@ -662,7 +662,7 @@ class _RequestAidState extends State<RequestAidScreen> {
             )
           else
             DropdownButtonFormField<CalamityType>(
-              value: _selectedCalamityType,
+              initialValue: _selectedCalamityType,
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
               dropdownColor: Colors.white,
               decoration: InputDecoration(

@@ -87,12 +87,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   String _getFeedback(int percentage) {
-    if (percentage >= 90)
+    if (percentage >= 90) {
       return 'Excellent work! You are well prepared for this emergency.';
-    if (percentage >= 70)
+    }
+    if (percentage >= 70) {
       return 'Good job! Review a few more tips to be fully ready.';
-    if (percentage >= 50)
+    }
+    if (percentage >= 50) {
       return 'Not bad, but you should review the safety tips again.';
+    }
     return 'Please read the safety tips carefully to ensure your safety.';
   }
 
