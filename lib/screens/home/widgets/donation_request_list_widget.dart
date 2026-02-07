@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/donation_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/donation_request/donation_request_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/donation_request/edit_donation_request_screen.dart';
 import 'package:reliefflow_frontend_public_app/components/shared/shared.dart';
 
 const _kThemeColorCash = Color(0xFF43A047);
@@ -185,6 +186,36 @@ class _DonationRequestCard extends StatelessWidget {
 
   const _DonationRequestCard({required this.request});
 
+  void _handleEdit(BuildContext context) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditDonationRequestScreen(request: request),
+      ),
+    );
+
+    // Refresh the list if edit was successful
+    if (result == true && context.mounted) {
+      context.read<RequestsListCubit>().loadRequests();
+    }
+  }
+
+  void _handleDelete(BuildContext context) async {
+    final cubit = context.read<RequestsListCubit>();
+    final success = await cubit.deleteDonationRequest(request.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Request deleted successfully'
+                : 'Failed to delete request',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCash = request.donationType == 'cash';
@@ -192,7 +223,13 @@ class _DonationRequestCard extends StatelessWidget {
     final themeColor = isCash ? _kThemeColorCash : _kThemeColorItem;
 
     return InkWell(
-      onTap: () => DonationRequestBottomSheet.show(context, request, isCash),
+      onTap: () => DonationRequestBottomSheet.show(
+        context,
+        request,
+        isCash,
+        onEdit: request.canEdit ? () => _handleEdit(context) : null,
+        onDelete: request.canDelete ? () => _handleDelete(context) : null,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -266,10 +303,13 @@ class _DonationRequestCard extends StatelessWidget {
                         ),
                         if (request.createdAt != null)
                           Text(
-                            DateFormat('MMM dd').format(request.createdAt!),
+                            DateFormat(
+                              'MMM dd,yyyy',
+                            ).format(request.createdAt!),
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.grey[500],
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                       ],

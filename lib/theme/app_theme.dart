@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Primary Colors - Soft Teal/Mint inspired palette (matching volunteer app)
-  static const Color primaryColor = Color(0xFF4ECDC4);
+  static const Color primaryColor = Color(0xFF1E88E5);
   static const Color primaryColorLight = Color(0xFF7EDDD6);
   static const Color primaryColorDark = Color(0xFF3BA99F);
 

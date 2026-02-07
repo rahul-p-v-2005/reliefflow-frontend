@@ -12,6 +12,7 @@ class AidRequest {
   final String name;
   final DateTime? createdAt;
   final bool isRead;
+  final Map<String, dynamic>? location;
 
   AidRequest({
     required this.id,
@@ -27,6 +28,7 @@ class AidRequest {
     required this.name,
     this.createdAt,
     this.isRead = false,
+    this.location,
   });
 
   /// Check if this request can be edited by the user
@@ -67,6 +69,7 @@ class AidRequest {
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
       isRead: json['isRead'] ?? false,
+      location: json['location'] as Map<String, dynamic>?,
     );
   }
 
@@ -77,18 +80,27 @@ class AidRequest {
     if (addressData is Map<String, dynamic>) {
       // Build address from addressLine fields
       final parts = <String>[];
-      if (addressData['addressLine1'] != null) {
-        parts.add(addressData['addressLine1'].toString());
+
+      final line1 = addressData['addressLine1']?.toString().trim() ?? '';
+      if (line1.isNotEmpty) {
+        parts.add(line1);
       }
-      if (addressData['addressLine2'] != null) {
-        parts.add(addressData['addressLine2'].toString());
+
+      final line2 = addressData['addressLine2']?.toString().trim() ?? '';
+      if (line2.isNotEmpty) {
+        parts.add(line2);
       }
-      if (addressData['addressLine3'] != null) {
-        parts.add(addressData['addressLine3'].toString());
+
+      final line3 = addressData['addressLine3']?.toString().trim() ?? '';
+      if (line3.isNotEmpty) {
+        parts.add(line3);
       }
-      if (addressData['pinCode'] != null) {
-        parts.add('– ${addressData['pinCode']}');
+
+      final pinCode = addressData['pinCode'];
+      if (pinCode != null && pinCode != 0) {
+        parts.add('– $pinCode');
       }
+
       return parts.join(', ');
     }
     return '';

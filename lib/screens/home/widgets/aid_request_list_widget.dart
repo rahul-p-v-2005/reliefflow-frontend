@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/aid_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/edit_aid_request_screen.dart';
 import 'package:reliefflow_frontend_public_app/components/shared/shared.dart';
 
 const _kThemeColor = Color(0xFF1E88E5);
@@ -184,12 +185,46 @@ class _AidRequestCard extends StatelessWidget {
 
   const _AidRequestCard({required this.request});
 
+  void _handleEdit(BuildContext context) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditAidRequestScreen(
+          request: request,
+        ),
+      ),
+    );
+
+    // Refresh the list if edit was successful
+    if (result == true && context.mounted) {
+      context.read<RequestsListCubit>().loadRequests();
+    }
+  }
+
+  void _handleDelete(BuildContext context) async {
+    final success = await context.read<RequestsListCubit>().deleteAidRequest(
+      request.id,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? 'Request deleted' : 'Failed to delete'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = StatusUtils.getStatusColor(request.status);
 
     return InkWell(
-      onTap: () => AidRequestBottomSheet.show(context, request),
+      onTap: () => AidRequestBottomSheet.show(
+        context,
+        request,
+        onEdit: request.canEdit ? () => _handleEdit(context) : null,
+        onDelete: request.canDelete ? () => _handleDelete(context) : null,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -264,10 +299,11 @@ class _AidRequestCard extends StatelessWidget {
                         ),
                         if (request.createdAt != null)
                           Text(
-                            DateFormat('MMM dd').format(request.createdAt!),
+                            DateFormat('MMM dd,yyy').format(request.createdAt!),
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.grey[500],
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                       ],

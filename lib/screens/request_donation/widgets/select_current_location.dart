@@ -64,8 +64,8 @@ class _SelectCurrentLocationScreenState
     final coords = widget.preselectedLocation!.geometry?.coordinates;
     if (coords != null && coords.length >= 2) {
       _currentCenter = LatLng(coords[1], coords[0]); // lat, lon
-      _selectedFeature = widget.preselectedLocation;
-      _updateLocationDetails(widget.preselectedLocation!);
+      // Always do reverse geocoding to get actual location name from coordinates
+      _fetchAddressForLocation(_currentCenter);
     }
   }
 

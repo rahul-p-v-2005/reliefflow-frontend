@@ -7,7 +7,9 @@ import 'package:reliefflow_frontend_public_app/env.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/donation_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/geometry.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/models/item_request_item_category.dart';
 import 'package:reliefflow_frontend_public_app/components/shared/utils/image_utils.dart';
 
@@ -34,6 +36,7 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
   final _addressController = TextEditingController();
 
   bool _isSubmitting = false;
+  bool _isLoadingLocation = false;
   String _priority = 'medium';
   Feature? _selectedLocationFeature;
   DateTime? _deadline;
@@ -114,6 +117,11 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
       }
       if (addr.pinCode > 0) parts.add(addr.pinCode.toString());
       _addressController.text = parts.join(', ');
+    }
+
+    // Pre-populate location if available - reverse geocode to get actual name
+    if (widget.request.location != null) {
+      _initializeLocationFromCoordinates();
     }
   }
 
@@ -261,6 +269,101 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
     if (district?.isNotEmpty == true) parts.add(district!);
     if (props.state?.isNotEmpty == true) parts.add(props.state!);
     return parts.join(', ');
+  }
+
+  /// Initialize location feature by reverse geocoding saved coordinates
+  Future<void> _initializeLocationFromCoordinates() async {
+    final location = widget.request.location;
+    if (location == null) return;
+
+    final coordinates = location.coordinates;
+    if (coordinates.length < 2) return;
+
+    final lon = coordinates[0];
+    final lat = coordinates[1];
+
+    // Create initial feature with coordinates (name will be updated after geocoding)
+    _selectedLocationFeature = Feature(
+      type: 'Feature',
+      geometry: Geometry(
+        type: 'Point',
+        coordinates: [lon, lat],
+      ),
+      properties: Properties(
+        name: 'Loading location...',
+      ),
+    );
+
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Reverse geocode to get actual location name
+      final url = Uri.parse(
+        'https://photon.komoot.io/reverse?lon=$lon&lat=$lat',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'ReliefflowApp/1.0'},
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
+
+        if (data.features != null && data.features!.isNotEmpty) {
+          final feature = data.features!.first;
+          setState(() {
+            _selectedLocationFeature = Feature(
+              type: 'Feature',
+              geometry: Geometry(
+                type: 'Point',
+                coordinates: [lon, lat],
+              ),
+              properties: feature.properties,
+            );
+          });
+        } else {
+          // No geocoding result - show coordinates
+          setState(() {
+            _selectedLocationFeature = Feature(
+              type: 'Feature',
+              geometry: Geometry(
+                type: 'Point',
+                coordinates: [lon, lat],
+              ),
+              properties: Properties(
+                name: '${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}',
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      print('Reverse geocoding error: $e');
+      // Fallback to coordinates on error
+      if (mounted) {
+        setState(() {
+          _selectedLocationFeature = Feature(
+            type: 'Feature',
+            geometry: Geometry(
+              type: 'Point',
+              coordinates: [lon, lat],
+            ),
+            properties: Properties(
+              name: '${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}',
+            ),
+          );
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+        });
+      }
+    }
   }
 
   @override
@@ -871,7 +974,9 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
           FocusScope.of(context).unfocus();
           final result = await Navigator.of(context).push<Feature>(
             MaterialPageRoute(
-              builder: (context) => const SelectCurrentLocationScreen(),
+              builder: (context) => SelectCurrentLocationScreen(
+                preselectedLocation: _selectedLocationFeature,
+              ),
             ),
           );
           if (result != null) {
@@ -910,23 +1015,46 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _selectedLocationFeature?.properties?.name ??
-                          'Select Location on Map',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF333333),
+                    if (_isLoadingLocation)
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _themeColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Loading location...',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        _selectedLocationFeature?.properties?.name ??
+                            'Select Location on Map',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF333333),
+                        ),
                       ),
-                    ),
-                    if (_selectedLocationFeature != null)
+                    if (_selectedLocationFeature != null && !_isLoadingLocation)
                       Text(
                         _formatAddress(_selectedLocationFeature!.properties),
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       )
-                    else
+                    else if (!_isLoadingLocation)
                       Text(
                         'Tap to choose your exact location',
                         style: TextStyle(color: Colors.grey[500], fontSize: 12),
@@ -934,7 +1062,10 @@ class _EditDonationRequestState extends State<EditDonationRequestScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              if (_isLoadingLocation)
+                const SizedBox(width: 24)
+              else
+                const Icon(Icons.chevron_right),
             ],
           ),
         ),

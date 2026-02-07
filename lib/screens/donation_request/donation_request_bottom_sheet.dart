@@ -119,7 +119,7 @@ class DonationRequestBottomSheet extends StatelessWidget {
       children: [
         StatusBadgeLarge(status: request.status, color: statusColor),
         const SizedBox(width: 8),
-        PriorityBadge(priority: request.priority),
+        // PriorityBadge(priority: request.priority),
         const SizedBox(width: 8),
         // Show "Editable" badge when request can be edited
         if (request.canEdit)
@@ -798,7 +798,7 @@ class DonationRequestBottomSheet extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Track Donation Request',
+          'Track Request',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

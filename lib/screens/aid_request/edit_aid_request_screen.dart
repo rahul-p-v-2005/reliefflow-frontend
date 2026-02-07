@@ -11,7 +11,10 @@ import 'package:reliefflow_frontend_public_app/models/calamity_type.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/aid_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/request_donation/widgets/select_current_location.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/feature.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/geometry.dart';
 import 'package:reliefflow_frontend_public_app/models/location_search_response/properties.dart';
+import 'package:reliefflow_frontend_public_app/models/location_search_response/location_search_response.dart';
+import 'package:reliefflow_frontend_public_app/components/shared/utils/image_utils.dart';
 
 class EditAidRequestScreen extends StatefulWidget {
   final AidRequest request;
@@ -36,6 +39,7 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
   CalamityType? _selectedCalamityType;
   bool _isLoadingTypes = true;
   bool _isSubmitting = false;
+  bool _isLoadingLocation = false;
   String? _typesError;
   String _priority = 'medium';
   File? _selectedImage;
@@ -49,6 +53,23 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
     _descriptionController.text = widget.request.description ?? '';
     _addressController.text = widget.request.address;
     _priority = widget.request.priority;
+
+    // Pre-populate location if available - reverse geocode to get actual name
+    if (widget.request.location != null) {
+      _initializeLocationFromCoordinates();
+    }
+
+    // Debug: Check imageUrl
+    print('=== EDIT AID REQUEST DEBUG ===');
+    print('Request ID: ${widget.request.id}');
+    print('ImageUrl: ${widget.request.imageUrl}');
+    print('ImageUrl is null: ${widget.request.imageUrl == null}');
+    if (widget.request.imageUrl != null) {
+      print(
+        'Full image URL: ${ImageUtils.getImageUrl(widget.request.imageUrl!)}',
+      );
+    }
+
     _loadCalamityTypes();
   }
 
@@ -357,6 +378,101 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
     return parts.join(', ');
   }
 
+  /// Initialize location feature by reverse geocoding saved coordinates
+  Future<void> _initializeLocationFromCoordinates() async {
+    final location = widget.request.location;
+    if (location == null) return;
+
+    final coordinates = location['coordinates'] as List<dynamic>?;
+    if (coordinates == null || coordinates.length < 2) return;
+
+    final lon = (coordinates[0] as num).toDouble();
+    final lat = (coordinates[1] as num).toDouble();
+
+    // Create initial feature with coordinates (name will be updated after geocoding)
+    _selectedLocationFeature = Feature(
+      type: 'Feature',
+      geometry: Geometry(
+        type: 'Point',
+        coordinates: [lon, lat],
+      ),
+      properties: Properties(
+        name: 'Loading location...',
+      ),
+    );
+
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Reverse geocode to get actual location name
+      final url = Uri.parse(
+        'https://photon.komoot.io/reverse?lon=$lon&lat=$lat',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'ReliefflowApp/1.0'},
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        final data = LocationSearchResponse.fromJson(jsonDecode(response.body));
+
+        if (data.features != null && data.features!.isNotEmpty) {
+          final feature = data.features!.first;
+          setState(() {
+            _selectedLocationFeature = Feature(
+              type: 'Feature',
+              geometry: Geometry(
+                type: 'Point',
+                coordinates: [lon, lat],
+              ),
+              properties: feature.properties,
+            );
+          });
+        } else {
+          // No geocoding result - show coordinates
+          setState(() {
+            _selectedLocationFeature = Feature(
+              type: 'Feature',
+              geometry: Geometry(
+                type: 'Point',
+                coordinates: [lon, lat],
+              ),
+              properties: Properties(
+                name: '${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}',
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      print('Reverse geocoding error: $e');
+      // Fallback to coordinates on error
+      if (mounted) {
+        setState(() {
+          _selectedLocationFeature = Feature(
+            type: 'Feature',
+            geometry: Geometry(
+              type: 'Point',
+              coordinates: [lon, lat],
+            ),
+            properties: Properties(
+              name: '${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}',
+            ),
+          );
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -390,8 +506,8 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
                               const SizedBox(height: 16),
                               _buildCalamityTypeDropdown(),
                               const SizedBox(height: 16),
-                              _buildPriorityDropdown(),
-                              const SizedBox(height: 16),
+                              // _buildPriorityDropdown(),
+                              // const SizedBox(height: 16),
                               _buildDescriptionField(),
                               const SizedBox(height: 16),
                               _buildAddressField(),
@@ -475,7 +591,7 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
 
   Widget _buildInfoBanner() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -528,9 +644,16 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
 
   Widget _buildImagePicker() {
     final hasExistingImage =
-        widget.request.imageUrl != null && _selectedImage == null;
+        widget.request.imageUrl != null &&
+        widget.request.imageUrl!.isNotEmpty &&
+        _selectedImage == null;
     final hasNewImage = _selectedImage != null;
     final hasAnyImage = hasExistingImage || hasNewImage;
+
+    // Debug output
+    print(
+      'hasExistingImage: $hasExistingImage, imageUrl: ${widget.request.imageUrl}',
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -612,7 +735,7 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
 
   Widget _buildImagePreview(bool hasNewImage, bool hasExistingImage) {
     return Container(
-      height: 180,
+      height: 140,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -627,7 +750,7 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
               Image.file(_selectedImage!, fit: BoxFit.cover)
             else if (hasExistingImage)
               Image.network(
-                '$kBaseUrl${widget.request.imageUrl}',
+                ImageUtils.getImageUrl(widget.request.imageUrl!),
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -673,7 +796,9 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      hasNewImage ? 'New photo selected' : 'Current photo',
+                      hasNewImage
+                          ? 'New photo selected'
+                          : 'Previously uploaded',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -1022,7 +1147,9 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
           FocusScope.of(context).unfocus();
           final result = await Navigator.of(context).push<Feature>(
             MaterialPageRoute(
-              builder: (context) => const SelectCurrentLocationScreen(),
+              builder: (context) => SelectCurrentLocationScreen(
+                preselectedLocation: _selectedLocationFeature,
+              ),
             ),
           );
           if (result != null) {
@@ -1061,23 +1188,46 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _selectedLocationFeature?.properties?.name ??
-                          'Select Location on Map',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF333333),
+                    if (_isLoadingLocation)
+                      Row(
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF1E88E5),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Loading location...',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        _selectedLocationFeature?.properties?.name ??
+                            'Select Location on Map',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF333333),
+                        ),
                       ),
-                    ),
-                    if (_selectedLocationFeature != null)
+                    if (_selectedLocationFeature != null && !_isLoadingLocation)
                       Text(
                         _formatAddress(_selectedLocationFeature!.properties),
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       )
-                    else
+                    else if (!_isLoadingLocation)
                       Text(
                         'Tap to choose your exact location',
                         style: TextStyle(color: Colors.grey[500], fontSize: 12),
@@ -1085,7 +1235,10 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              if (_isLoadingLocation)
+                const SizedBox(width: 24)
+              else
+                const Icon(Icons.chevron_right),
             ],
           ),
         ),
