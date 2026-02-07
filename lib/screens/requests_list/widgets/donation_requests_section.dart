@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/donation_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/donation_request/donation_request_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/donation_request/edit_donation_request_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/components/shared/shared.dart';
 
 const _kThemeColorCash = Color(0xFF43A047);
@@ -189,12 +192,51 @@ class _DonationRequestListItem extends StatelessWidget {
 
   Color get _themeColor => isCash ? _kThemeColorCash : _kThemeColorItem;
 
+  void _handleEdit(BuildContext context) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditDonationRequestScreen(request: request),
+      ),
+    );
+
+    // Refresh the list if edit was successful
+    if (result == true && context.mounted) {
+      context.read<RequestsListCubit>().loadRequests();
+    }
+  }
+
+  void _handleDelete(BuildContext context) async {
+    final cubit = context.read<RequestsListCubit>();
+    final success = await cubit.deleteDonationRequest(request.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Request deleted successfully'
+                : 'Failed to delete request',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = StatusUtils.getStatusColor(request.status);
+    final isPending = request.status.toLowerCase() == 'pending';
+    final canEdit = request.canEdit;
+    final isUnderReview = isPending && !canEdit;
 
     return InkWell(
-      onTap: () => DonationRequestBottomSheet.show(context, request, isCash),
+      onTap: () => DonationRequestBottomSheet.show(
+        context,
+        request,
+        isCash,
+        onEdit: canEdit ? () => _handleEdit(context) : null,
+        onDelete: request.canDelete ? () => _handleDelete(context) : null,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -240,9 +282,53 @@ class _DonationRequestListItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        StatusBadge(
-                          status: request.status,
-                          color: statusColor,
+                        Row(
+                          children: [
+                            if (canEdit)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                margin: const EdgeInsets.only(right: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Editable',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ),
+                            if (isUnderReview)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                margin: const EdgeInsets.only(right: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Under Review',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ),
+                            StatusBadge(
+                              status: request.status,
+                              color: statusColor,
+                            ),
+                          ],
                         ),
                       ],
                     ),

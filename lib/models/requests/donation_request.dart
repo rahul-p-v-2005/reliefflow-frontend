@@ -168,6 +168,7 @@ class DonationRequest {
   final String? name; // Virtual field computed by backend
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final bool isRead;
 
   DonationRequest({
     required this.id,
@@ -190,7 +191,14 @@ class DonationRequest {
     this.name,
     this.createdAt,
     this.updatedAt,
+    this.isRead = false,
   });
+
+  /// Check if this request can be edited by the user
+  bool get canEdit => status == 'pending' && !isRead;
+
+  /// Check if this request can be deleted by the user
+  bool get canDelete => status == 'pending' && !isRead;
 
   factory DonationRequest.fromJson(Map<String, dynamic> json) {
     return DonationRequest(
@@ -246,6 +254,7 @@ class DonationRequest {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
+      isRead: json['isRead'] as bool? ?? false,
     );
   }
 

@@ -11,6 +11,7 @@ class AidRequest {
   final String formattedAddress;
   final String name;
   final DateTime? createdAt;
+  final bool isRead;
 
   AidRequest({
     required this.id,
@@ -25,7 +26,14 @@ class AidRequest {
     required this.formattedAddress,
     required this.name,
     this.createdAt,
+    this.isRead = false,
   });
+
+  /// Check if this request can be edited by the user
+  bool get canEdit => status == 'pending' && !isRead;
+
+  /// Check if this request can be deleted by the user
+  bool get canDelete => status == 'pending' && !isRead;
 
   factory AidRequest.fromJson(Map<String, dynamic> json) {
     // Handle calamityType which could be a string ID or populated object
@@ -58,6 +66,7 @@ class AidRequest {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
+      isRead: json['isRead'] ?? false,
     );
   }
 

@@ -10,14 +10,23 @@ const _kThemeColor = Color(0xFF1E88E5);
 /// Use [AidRequestBottomSheet.show] to display this bottom sheet.
 class AidRequestBottomSheet extends StatelessWidget {
   final AidRequest request;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const AidRequestBottomSheet({
     super.key,
     required this.request,
+    this.onEdit,
+    this.onDelete,
   });
 
   /// Shows the aid request bottom sheet.
-  static void show(BuildContext context, AidRequest request) {
+  static void show(
+    BuildContext context,
+    AidRequest request, {
+    VoidCallback? onEdit,
+    VoidCallback? onDelete,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -29,7 +38,11 @@ class AidRequestBottomSheet extends StatelessWidget {
             borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
           ),
           padding: const EdgeInsets.all(24),
-          child: AidRequestBottomSheet(request: request),
+          child: AidRequestBottomSheet(
+            request: request,
+            onEdit: onEdit,
+            onDelete: onDelete,
+          ),
         );
       },
     );
@@ -76,6 +89,86 @@ class AidRequestBottomSheet extends StatelessWidget {
 
           // Track button
           _buildTrackButton(context),
+
+          // Edit/Delete buttons (only visible when request can be edited/deleted)
+          if (request.canEdit || request.canDelete) ...[
+            const SizedBox(height: 12),
+            _buildActionButtons(context),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        if (request.canEdit && onEdit != null)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                onEdit!();
+              },
+              icon: const Icon(Icons.edit, size: 18),
+              label: const Text('Edit'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _kThemeColor,
+                side: const BorderSide(color: _kThemeColor),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        if (request.canEdit &&
+            request.canDelete &&
+            onEdit != null &&
+            onDelete != null)
+          const SizedBox(width: 12),
+        if (request.canDelete && onDelete != null)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _showDeleteConfirmation(context),
+              icon: const Icon(Icons.delete, size: 18),
+              label: const Text('Delete'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Request'),
+        content: const Text(
+          'Are you sure you want to delete this aid request? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+              onDelete!();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -132,7 +225,56 @@ class AidRequestBottomSheet extends StatelessWidget {
       children: [
         StatusBadgeLarge(status: request.status, color: statusColor),
         const SizedBox(width: 8),
-        // PriorityBadge(priority: request.priority),
+        // Show "Editable" badge when request can be edited
+        if (request.canEdit)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.edit, size: 12, color: Colors.green),
+                SizedBox(width: 4),
+                Text(
+                  'Editable',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Show "Under Review" badge when admin has viewed but still pending
+        if (!request.canEdit && request.status == 'pending' && request.isRead)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.visibility, size: 12, color: Colors.grey),
+                SizedBox(width: 4),
+                Text(
+                  'Under Review',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

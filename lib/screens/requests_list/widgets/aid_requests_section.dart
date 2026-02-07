@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:reliefflow_frontend_public_app/models/requests/aid_request.dart';
 import 'package:reliefflow_frontend_public_app/screens/aid_request/aid_request_bottom_sheet.dart';
+import 'package:reliefflow_frontend_public_app/screens/aid_request/edit_aid_request_screen.dart';
+import 'package:reliefflow_frontend_public_app/screens/requests_list/cubit/requests_list_cubit.dart';
 import 'package:reliefflow_frontend_public_app/components/shared/shared.dart';
 
 const _kThemeColor = Color(0xFF1E88E5);
@@ -133,12 +136,46 @@ class _AidRequestListItem extends StatelessWidget {
     };
   }
 
+  void _handleEdit(BuildContext context) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditAidRequestScreen(
+          request: request,
+        ),
+      ),
+    );
+
+    // Refresh the list if edit was successful
+    if (result == true && context.mounted) {
+      context.read<RequestsListCubit>().loadRequests();
+    }
+  }
+
+  void _handleDelete(BuildContext context) async {
+    final success = await context.read<RequestsListCubit>().deleteAidRequest(
+      request.id,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? 'Request deleted' : 'Failed to delete'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = StatusUtils.getStatusColor(request.status);
 
     return InkWell(
-      onTap: () => AidRequestBottomSheet.show(context, request),
+      onTap: () => AidRequestBottomSheet.show(
+        context,
+        request,
+        onEdit: request.canEdit ? () => _handleEdit(context) : null,
+        onDelete: request.canDelete ? () => _handleDelete(context) : null,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -214,15 +251,76 @@ class _AidRequestListItem extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // const SizedBox(height: 2),
-                    // Text(
-                    //   'ID: ${request.id.length > 8 ? '${request.id.substring(0, 8)}...' : request.id}',
-                    //   style: TextStyle(
-                    //     color: Colors.grey[400],
-                    //     fontWeight: FontWeight.bold,
-                    //     fontSize: 11,
-                    //   ),
-                    // ),
+                    // Editable/Under Review indicator
+                    if (request.canEdit ||
+                        (request.status == 'pending' && request.isRead)) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (request.canEdit)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    size: 10,
+                                    color: Colors.green,
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Editable',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (request.status == 'pending' &&
+                              request.isRead)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.visibility,
+                                    size: 10,
+                                    color: Colors.orange,
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Under Review',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

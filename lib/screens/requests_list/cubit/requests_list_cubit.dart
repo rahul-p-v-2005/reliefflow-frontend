@@ -177,4 +177,66 @@ class RequestsListCubit extends Cubit<RequestsListState> {
   }
 
   void refresh() => loadRequests(statusFilter: _currentFilter);
+
+  /// Delete an aid request
+  Future<bool> deleteAidRequest(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(kTokenStorageKey);
+
+      if (token == null) {
+        return false;
+      }
+
+      final response = await http.delete(
+        Uri.parse('$kBaseUrl/public/aid/request/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Refresh the list after successful deletion
+        await loadRequests(statusFilter: _currentFilter);
+        return true;
+      }
+      log('Delete aid request failed: ${response.body}');
+      return false;
+    } catch (e) {
+      log('Delete aid request error: $e');
+      return false;
+    }
+  }
+
+  /// Delete a donation request
+  Future<bool> deleteDonationRequest(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(kTokenStorageKey);
+
+      if (token == null) {
+        return false;
+      }
+
+      final response = await http.delete(
+        Uri.parse('$kBaseUrl/public/donation/delete/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Refresh the list after successful deletion
+        await loadRequests(statusFilter: _currentFilter);
+        return true;
+      }
+      log('Delete donation request failed: ${response.body}');
+      return false;
+    } catch (e) {
+      log('Delete donation request error: $e');
+      return false;
+    }
+  }
 }

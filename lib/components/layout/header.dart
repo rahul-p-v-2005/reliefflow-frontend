@@ -27,12 +27,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 Text(
                   'Flow',
                   style: TextStyle(
-                    color: const Color.fromARGB(
-                      255,
-                      4,
-                      212,
-                      245,
-                    ).withOpacity(1.0),
+                    color: Color(0xFF1E88E5),
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
