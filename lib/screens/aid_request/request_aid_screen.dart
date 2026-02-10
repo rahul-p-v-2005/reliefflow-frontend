@@ -31,6 +31,8 @@ class _RequestAidState extends State<RequestAidScreen> {
   File? _selectedImage;
   Feature? _selectedLocationFeature;
   final ImagePicker _imagePicker = ImagePicker();
+  String? _imageError;
+  String? _locationError;
 
   @override
   void initState() {
@@ -114,6 +116,7 @@ class _RequestAidState extends State<RequestAidScreen> {
         debugPrint('Setting selected image...');
         setState(() {
           _selectedImage = File(pickedFile.path);
+          _imageError = null;
         });
         debugPrint('Image set successfully');
       } else {
@@ -238,7 +241,26 @@ class _RequestAidState extends State<RequestAidScreen> {
   }
 
   Future<void> _submitRequest() async {
-    if (!_formKey.currentState!.validate()) return;
+    final isFormValid = _formKey.currentState!.validate();
+
+    bool hasCustomErrors = false;
+
+    if (_selectedImage == null) {
+      setState(() => _imageError = 'Please insert an image');
+      hasCustomErrors = true;
+    } else {
+      setState(() => _imageError = null);
+    }
+
+    if (_selectedLocationFeature == null) {
+      setState(() => _locationError = 'Please provide your current location');
+      hasCustomErrors = true;
+    } else {
+      setState(() => _locationError = null);
+    }
+
+    if (!isFormValid || hasCustomErrors) return;
+
     if (_selectedCalamityType == null) {
       _showSnackBar('Please select a calamity type', isError: true);
       return;
@@ -577,6 +599,17 @@ class _RequestAidState extends State<RequestAidScreen> {
               ),
             ),
           ),
+          if (_imageError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: Text(
+                _imageError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -665,6 +698,12 @@ class _RequestAidState extends State<RequestAidScreen> {
               initialValue: _selectedCalamityType,
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
               dropdownColor: Colors.white,
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a calamity type';
+                }
+                return null;
+              },
               decoration: InputDecoration(
                 hintText: 'Select calamity type',
                 hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -757,6 +796,12 @@ class _RequestAidState extends State<RequestAidScreen> {
             controller: _descriptionController,
             minLines: 3,
             maxLines: 5,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a description';
+              }
+              return null;
+            },
             decoration: InputDecoration(
               hintText: 'Describe your situation and what help you need...',
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -858,103 +903,122 @@ class _RequestAidState extends State<RequestAidScreen> {
   }
 
   Widget _buildLocationPicker() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () async {
-          // Dismiss keyboard and un-focus any active field
-          FocusScope.of(context).unfocus();
-
-          final result = await Navigator.of(context).push<Feature>(
-            MaterialPageRoute(
-              builder: (context) => const SelectCurrentLocationScreen(),
-            ),
-          );
-
-          if (result != null) {
-            setState(() {
-              _selectedLocationFeature = result;
-              // Auto-fill address if available and empty
-              if (_addressController.text.isEmpty &&
-                  result.properties?.name != null) {
-                _addressController.text = result.properties!.name!;
-              }
-            });
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _selectedLocationFeature != null
-                      ? Colors.red.withOpacity(0.1)
-                      : const Color(0xFF1E88E5).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.location_on,
-                  color: _selectedLocationFeature != null
-                      ? Colors.red
-                      : const Color(0xFF1E88E5),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _selectedLocationFeature?.properties?.name ??
-                          'Select Location on Map',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                    if (_selectedLocationFeature != null)
-                      Text(
-                        _formatAddress(_selectedLocationFeature!.properties),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    else
-                      Text(
-                        'Tap to choose your exact location',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
+          child: InkWell(
+            onTap: () async {
+              // Dismiss keyboard and un-focus any active field
+              FocusScope.of(context).unfocus();
+
+              final result = await Navigator.of(context).push<Feature>(
+                MaterialPageRoute(
+                  builder: (context) => const SelectCurrentLocationScreen(),
+                ),
+              );
+
+              if (result != null) {
+                setState(() {
+                  _selectedLocationFeature = result;
+                  _locationError = null;
+                  // Auto-fill address if available and empty
+                  if (_addressController.text.isEmpty &&
+                      result.properties?.name != null) {
+                    _addressController.text = result.properties!.name!;
+                  }
+                });
+              }
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _selectedLocationFeature != null
+                          ? Colors.red.withOpacity(0.1)
+                          : const Color(0xFF1E88E5).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.location_on,
+                      color: _selectedLocationFeature != null
+                          ? Colors.red
+                          : const Color(0xFF1E88E5),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedLocationFeature?.properties?.name ??
+                              'Select Location on Map',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF333333),
+                          ),
+                        ),
+                        if (_selectedLocationFeature != null)
+                          Text(
+                            _formatAddress(
+                              _selectedLocationFeature!.properties,
+                            ),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        else
+                          Text(
+                            'Tap to choose your exact location',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+        if (_locationError != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 4),
+            child: Text(
+              _locationError!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

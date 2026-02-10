@@ -31,8 +31,11 @@ class _ItemsDonationFormBody extends StatefulWidget {
 }
 
 class _ItemsDonationFormBodyState extends State<_ItemsDonationFormBody> {
+  final _formKey = GlobalKey<FormState>();
   late FocusNode _titleFocus;
   late FocusNode _descriptionFocus;
+  String? _itemsError;
+  String? _locationError;
 
   @override
   void initState() {
@@ -79,102 +82,191 @@ class _ItemsDonationFormBodyState extends State<_ItemsDonationFormBody> {
       },
       builder: (context, state) {
         final cubit = context.read<ItemsDonationCubit>();
-        return ListView(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            // Basic Info
-            DonationCard(
-              icon: Icons.info_outline,
-              iconColor: Color(0xFF1E88E5),
-              title: 'Basic Information',
-              child: Column(
-                children: [
-                  CompactTextField(
-                    label: 'Title',
-                    hint: 'e.g., Need supplies for flood relief',
-                    value: state.title,
-                    focusNode: _titleFocus,
-                    onChanged: cubit.updateTitle,
-                  ),
-                  SizedBox(height: 12),
-                  CompactTextField(
-                    label: 'Description',
-                    hint: 'Explain what items you need and why...',
-                    value: state.description,
-                    focusNode: _descriptionFocus,
-                    maxLines: 3,
-                    onChanged: cubit.updateDescription,
-                  ),
-                ],
+        return Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              // Basic Info
+              DonationCard(
+                icon: Icons.info_outline,
+                iconColor: Color(0xFF1E88E5),
+                title: 'Basic Information',
+                child: Column(
+                  children: [
+                    CompactTextField(
+                      label: 'Title',
+                      hint: 'e.g., Need supplies for flood relief',
+                      value: state.title,
+                      focusNode: _titleFocus,
+                      onChanged: cubit.updateTitle,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a title';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12),
+                    CompactTextField(
+                      label: 'Description',
+                      hint: 'Explain what items you need and why...',
+                      value: state.description,
+                      focusNode: _descriptionFocus,
+                      maxLines: 3,
+                      onChanged: cubit.updateDescription,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Items
-            DonationCard(
-              icon: Icons.inventory_2,
-              iconColor: Color(0xFF43A047),
-              title: 'Items Needed',
-              child: Column(
-                children: [
-                  _ItemsList(items: state.items, onRemove: cubit.removeItem),
-                  SizedBox(height: 10),
-                  _AddItemButton(
-                    onAdd: cubit.addItem,
-                    onTapCallback: _unfocusAll,
-                  ),
-                ],
+              // Items
+              DonationCard(
+                icon: Icons.inventory_2,
+                iconColor: Color(0xFF43A047),
+                title: 'Items Needed',
+                child: Column(
+                  children: [
+                    _ItemsList(
+                      items: state.items,
+                      onRemove: (i) {
+                        cubit.removeItem(i);
+                        if (state.items.length <= 1) {
+                          setState(
+                            () => _itemsError = 'Please add at least one item',
+                          );
+                        }
+                      },
+                    ),
+                    if (_itemsError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _itemsError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    SizedBox(height: 10),
+                    _AddItemButton(
+                      onAdd: (item) {
+                        cubit.addItem(item);
+                        setState(() => _itemsError = null);
+                      },
+                      onTapCallback: _unfocusAll,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Location
-            DonationCard(
-              icon: Icons.location_on,
-              iconColor: Color(0xFFE53935),
-              title: 'Pickup/Delivery Location',
-              child: _LocationPicker(
-                location: state.location,
-                onSelect: cubit.setLocation,
-                onTapCallback: _unfocusAll,
+              // Location
+              DonationCard(
+                icon: Icons.location_on,
+                iconColor: Color(0xFFE53935),
+                title: 'Pickup/Delivery Location',
+                child: Column(
+                  children: [
+                    _LocationPicker(
+                      location: state.location,
+                      onSelect: (loc) {
+                        cubit.setLocation(loc);
+                        setState(() => _locationError = null);
+                      },
+                      onTapCallback: _unfocusAll,
+                    ),
+                    if (_locationError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _locationError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Photos
-            DonationCard(
-              icon: Icons.camera_alt,
-              iconColor: Color(0xFFFF7043),
-              title: 'Situation Photos (Optional)',
-              child: _ImagePicker(
-                images: state.images,
-                onPick: cubit.pickImages,
-                onRemove: cubit.removeImage,
-                onTapCallback: _unfocusAll,
+              // Photos
+              DonationCard(
+                icon: Icons.camera_alt,
+                iconColor: Color(0xFFFF7043),
+                title: 'Situation Photos (Optional)',
+                child: _ImagePicker(
+                  images: state.images,
+                  onPick: cubit.pickImages,
+                  onRemove: cubit.removeImage,
+                  onTapCallback: _unfocusAll,
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Deadline
-            DonationCard(
-              icon: Icons.calendar_today,
-              iconColor: Color(0xFF7B1FA2),
-              title: 'Deadline (Optional)',
-              child: _DeadlinePicker(
-                deadline: state.deadline,
-                onSelect: cubit.setDeadline,
-                onTapCallback: _unfocusAll,
+              // Deadline
+              DonationCard(
+                icon: Icons.calendar_today,
+                iconColor: Color(0xFF7B1FA2),
+                title: 'Deadline (Optional)',
+                child: _DeadlinePicker(
+                  deadline: state.deadline,
+                  onSelect: cubit.setDeadline,
+                  onTapCallback: _unfocusAll,
+                ),
               ),
-            ),
-            SizedBox(height: 24),
+              SizedBox(height: 24),
 
-            // Submit
-            _SubmitButton(
-              isLoading: state.status == DonationSubmitStatus.loading,
-              onPressed: cubit.submit,
-            ),
-            SizedBox(height: 32),
-          ],
+              // Submit
+              _SubmitButton(
+                isLoading: state.status == DonationSubmitStatus.loading,
+                onPressed: () {
+                  final isFormValid = _formKey.currentState!.validate();
+                  bool hasCustomErrors = false;
+
+                  if (state.items.isEmpty) {
+                    setState(
+                      () => _itemsError = 'Please add at least one item',
+                    );
+                    hasCustomErrors = true;
+                  } else {
+                    setState(() => _itemsError = null);
+                  }
+
+                  if (state.location == null) {
+                    setState(
+                      () => _locationError =
+                          'Please provide your current location',
+                    );
+                    hasCustomErrors = true;
+                  } else {
+                    setState(() => _locationError = null);
+                  }
+
+                  if (isFormValid && !hasCustomErrors) {
+                    cubit.submit();
+                  }
+                },
+              ),
+              SizedBox(height: 32),
+            ],
+          ),
         );
       },
     );

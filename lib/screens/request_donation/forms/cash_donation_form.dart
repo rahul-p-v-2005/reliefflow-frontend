@@ -18,8 +18,15 @@ class CashDonationForm extends StatelessWidget {
   }
 }
 
-class _CashDonationFormBody extends StatelessWidget {
+class _CashDonationFormBody extends StatefulWidget {
   const _CashDonationFormBody();
+
+  @override
+  State<_CashDonationFormBody> createState() => _CashDonationFormBodyState();
+}
+
+class _CashDonationFormBodyState extends State<_CashDonationFormBody> {
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -46,97 +53,132 @@ class _CashDonationFormBody extends StatelessWidget {
       },
       builder: (context, state) {
         final cubit = context.read<CashDonationCubit>();
-        return ListView(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            // Basic Info
-            DonationCard(
-              icon: Icons.info_outline,
-              iconColor: Color(0xFF1E88E5),
-              title: 'Basic Information',
-              child: Column(
-                children: [
-                  CompactTextField(
-                    label: 'Title',
-                    hint: 'e.g., Help for medical emergency',
-                    value: state.title,
-                    onChanged: cubit.updateTitle,
-                  ),
-                  SizedBox(height: 12),
-                  CompactTextField(
-                    label: 'Description',
-                    hint: 'Explain why you need assistance...',
-                    value: state.description,
-                    maxLines: 3,
-                    onChanged: cubit.updateDescription,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 12),
-
-            // Amount
-            DonationCard(
-              icon: Icons.currency_rupee,
-              iconColor: Color(0xFF43A047),
-              title: 'Amount Details',
-              child: Column(
-                children: [
-                  CompactTextField(
-                    label: 'Amount Needed (₹)',
-                    hint: '0.00',
-                    value: state.amount,
-                    keyboardType: TextInputType.numberWithOptions(
-                      decimal: true,
+        return Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              // Basic Info
+              DonationCard(
+                icon: Icons.info_outline,
+                iconColor: Color(0xFF1E88E5),
+                title: 'Basic Information',
+                child: Column(
+                  children: [
+                    CompactTextField(
+                      label: 'Title',
+                      hint: 'e.g., Help for medical emergency',
+                      value: state.title,
+                      onChanged: cubit.updateTitle,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a title';
+                        }
+                        return null;
+                      },
                     ),
-                    prefixIcon: Icons.currency_rupee,
-                    onChanged: cubit.updateAmount,
-                  ),
-                  SizedBox(height: 12),
-                  CompactTextField(
-                    label: 'UPI ID',
-                    hint: 'yourname@upi',
-                    value: state.upiId,
-                    prefixIcon: Icons.account_balance_wallet,
-                    onChanged: cubit.updateUpiId,
-                  ),
-                ],
+                    SizedBox(height: 12),
+                    CompactTextField(
+                      label: 'Description',
+                      hint: 'Explain why you need assistance...',
+                      value: state.description,
+                      maxLines: 3,
+                      onChanged: cubit.updateDescription,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Photos
-            DonationCard(
-              icon: Icons.camera_alt,
-              iconColor: Color(0xFFFF7043),
-              title: 'Proof Images (Optional)',
-              child: _ImagePicker(
-                images: state.images,
-                onPick: cubit.pickImages,
-                onRemove: cubit.removeImage,
+              // Amount
+              DonationCard(
+                icon: Icons.currency_rupee,
+                iconColor: Color(0xFF43A047),
+                title: 'Amount Details',
+                child: Column(
+                  children: [
+                    CompactTextField(
+                      label: 'Amount Needed (₹)',
+                      hint: '0.00',
+                      value: state.amount,
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      prefixIcon: Icons.currency_rupee,
+                      onChanged: cubit.updateAmount,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter an amount';
+                        }
+                        if (double.tryParse(value) == null ||
+                            double.parse(value) <= 0) {
+                          return 'Please enter a valid amount';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12),
+                    CompactTextField(
+                      label: 'UPI ID',
+                      hint: 'yourname@upi',
+                      value: state.upiId,
+                      prefixIcon: Icons.account_balance_wallet,
+                      onChanged: cubit.updateUpiId,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your UPI ID';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
+              SizedBox(height: 12),
 
-            // Deadline
-            DonationCard(
-              icon: Icons.calendar_today,
-              iconColor: Color(0xFF7B1FA2),
-              title: 'Deadline (Optional)',
-              child: _DeadlinePicker(
-                deadline: state.deadline,
-                onSelect: cubit.setDeadline,
+              // Photos
+              DonationCard(
+                icon: Icons.camera_alt,
+                iconColor: Color(0xFFFF7043),
+                title: 'Proof Images (Optional)',
+                child: _ImagePicker(
+                  images: state.images,
+                  onPick: cubit.pickImages,
+                  onRemove: cubit.removeImage,
+                ),
               ),
-            ),
-            SizedBox(height: 24),
+              SizedBox(height: 12),
 
-            // Submit
-            _SubmitButton(
-              isLoading: state.status == DonationSubmitStatus.loading,
-              onPressed: cubit.submit,
-            ),
-            SizedBox(height: 32),
-          ],
+              // Deadline
+              DonationCard(
+                icon: Icons.calendar_today,
+                iconColor: Color(0xFF7B1FA2),
+                title: 'Deadline (Optional)',
+                child: _DeadlinePicker(
+                  deadline: state.deadline,
+                  onSelect: cubit.setDeadline,
+                ),
+              ),
+              SizedBox(height: 24),
+
+              // Submit
+              _SubmitButton(
+                isLoading: state.status == DonationSubmitStatus.loading,
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    cubit.submit();
+                  }
+                },
+              ),
+              SizedBox(height: 32),
+            ],
+          ),
         );
       },
     );

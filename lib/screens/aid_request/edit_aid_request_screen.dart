@@ -1106,6 +1106,12 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
             controller: _descriptionController,
             minLines: 3,
             maxLines: 5,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a description';
+              }
+              return null;
+            },
             decoration: InputDecoration(
               hintText: 'Describe your situation and what help you need...',
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
