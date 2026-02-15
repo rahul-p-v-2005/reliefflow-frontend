@@ -57,6 +57,18 @@ class ItemsDonationCubit extends Cubit<ItemsDonationState> {
     }
   }
 
+  Future<void> pickImageFromCamera() async {
+    try {
+      final XFile? picked = await _imagePicker.pickImage(source: ImageSource.camera);
+      if (picked != null) {
+        final newImages = [...state.images, File(picked.path)];
+        emit(state.copyWith(images: newImages));
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to capture image'));
+    }
+  }
+
   void removeImage(int index) {
     final images = [...state.images];
     images.removeAt(index);

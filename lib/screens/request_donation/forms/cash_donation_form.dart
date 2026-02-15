@@ -149,7 +149,8 @@ class _CashDonationFormBodyState extends State<_CashDonationFormBody> {
                 title: 'Proof Images (Optional)',
                 child: _ImagePicker(
                   images: state.images,
-                  onPick: cubit.pickImages,
+                  onPickFromGallery: cubit.pickImages,
+                  onPickFromCamera: cubit.pickImageFromCamera,
                   onRemove: cubit.removeImage,
                 ),
               ),
@@ -187,14 +188,112 @@ class _CashDonationFormBodyState extends State<_CashDonationFormBody> {
 
 class _ImagePicker extends StatelessWidget {
   final List<File> images;
-  final VoidCallback onPick;
+  final VoidCallback onPickFromGallery;
+  final VoidCallback onPickFromCamera;
   final Function(int) onRemove;
 
   const _ImagePicker({
     required this.images,
-    required this.onPick,
+    required this.onPickFromGallery,
+    required this.onPickFromCamera,
     required this.onRemove,
   });
+
+  void _showImageSourceDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Add Photos',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildSourceOption(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPickFromCamera();
+                  },
+                ),
+                _buildSourceOption(
+                  icon: Icons.photo_library_rounded,
+                  label: 'Gallery',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPickFromGallery();
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 32),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +345,7 @@ class _ImagePicker extends StatelessWidget {
           SizedBox(height: 8),
         ],
         InkWell(
-          onTap: onPick,
+          onTap: () => _showImageSourceDialog(context),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: EdgeInsets.all(14), // Matches CompactTextField
