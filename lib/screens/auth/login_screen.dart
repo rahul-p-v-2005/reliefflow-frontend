@@ -401,7 +401,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Relief',
+                        'Relie',
                         style: AppTheme.mainFont(
                           fontSize: 24, // Reduced from 32
                           fontWeight: FontWeight.bold,
