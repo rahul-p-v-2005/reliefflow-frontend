@@ -1017,6 +1017,7 @@ class _EditAidRequestState extends State<EditAidRequestScreen> {
             initialValue: _selectedCalamityType,
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
             dropdownColor: Colors.white,
+            menuMaxHeight: 250,
             decoration: InputDecoration(
               hintText: 'Select calamity type',
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),

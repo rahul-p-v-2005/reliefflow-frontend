@@ -698,6 +698,7 @@ class _RequestAidState extends State<RequestAidScreen> {
               initialValue: _selectedCalamityType,
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
               dropdownColor: Colors.white,
+              menuMaxHeight: 250,
               validator: (value) {
                 if (value == null) {
                   return 'Please select a calamity type';
