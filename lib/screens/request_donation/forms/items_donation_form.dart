@@ -331,11 +331,11 @@ class _ItemsList extends StatelessWidget {
               ),
             ),
             title: Text(
-              item.category.categoryName,
+              item.description,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
             subtitle: Text(
-              item.description,
+              item.category.categoryName,
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
             trailing: Row(
