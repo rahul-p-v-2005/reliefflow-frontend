@@ -565,6 +565,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
         print(parsedBody);
 
+        // Check if user is a volunteer — block login in the public app
+        final userData = parsedBody['user'] as Map<String, dynamic>?;
+        final userRole = userData?['role']?.toString();
+
+        if (userRole == 'volunteer') {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: const Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red, size: 28),
+                    SizedBox(width: 8),
+                    Text(
+                      'Access Denied',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Volunteer accounts cannot log in to the public app. Please use the Volunteer app instead.',
+                  style: TextStyle(fontSize: 15),
+                ),
+                actions: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
+
         final token = parsedBody['token']; // from backend
 
         // Save token locally
