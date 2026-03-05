@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
       restorationScopeId:
-          'reliefflow_app', // Enable state restoration for activity recreation
+          'RelieFlow_app', // Enable state restoration for activity recreation
     );
   }
 }
